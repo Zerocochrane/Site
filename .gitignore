@@ -1,0 +1,19 @@
+# Dependências e build
+node_modules
+client/dist
+
+# Configuração com senhas — NUNCA vai para o GitHub
+.env
+server/.env
+
+# Dados do site (ficam só no servidor)
+server/data/
+server/uploads/*
+!server/uploads/.gitkeep
+server/private/
+logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
