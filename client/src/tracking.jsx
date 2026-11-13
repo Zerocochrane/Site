@@ -53,10 +53,30 @@ async function startVisit(path) {
   currentVisit = visit;
   if (consent === 'granted') sendLocation(visit);
   else if (consent !== 'denied') {
-    if (canLocate()) setAsk(true);
+    if (canLocate()) watchEngagement(); // só pergunta depois que a pessoa já está vendo o trabalho
     else post('/location', { ...visit, unavailable: true }); // site sem HTTPS: o navegador não deixa pedir
   }
   return visit;
+}
+
+// O pedido de localização NÃO aparece na chegada: só quando a pessoa já se envolveu com o site
+// (abriu uma segunda página, rolou bastante ou ficou 40 s) — e nunca no Agendar nem na área do cliente.
+const QUIET_PATHS = /^\/(availability|agendar|client|cliente)/;
+let engaged = false;
+let eligible = false;
+function maybeAsk() {
+  if (!eligible || askForLocation || !engaged) return;
+  if (QUIET_PATHS.test(window.location.pathname)) return; // tenta de novo na próxima página
+  setAsk(true);
+}
+function markEngaged() { engaged = true; maybeAsk(); }
+function watchEngagement() {
+  eligible = true;
+  const onScroll = () => {
+    if (window.scrollY > window.innerHeight * 1.5) { window.removeEventListener('scroll', onScroll); markEngaged(); }
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  setTimeout(markEngaged, 40000);
 }
 
 /** Registra a visita e as páginas vistas. Não conta a fotógrafa (logada no painel) nem robôs. */
@@ -68,7 +88,10 @@ export function useVisitTracking(pathname) {
     if (saved && Date.now() - saved.at < VISIT_GAP_MS) {
       currentVisit = { id: saved.id, token: saved.token };
       put(sessionStorage, VISIT_KEY, JSON.stringify({ ...saved, at: Date.now(), lastPath: pathname }));
-      if (saved.lastPath !== pathname) post('/page', currentVisit);
+      if (saved.lastPath !== pathname) {
+        post('/page', currentVisit);
+        if (get(localStorage, CONSENT_KEY) === null && canLocate()) { eligible = true; markEngaged(); } // 2ª página
+      }
       return;
     }
     if (!starting) starting = startVisit(pathname).finally(() => { starting = null; });
@@ -89,14 +112,11 @@ export function LocationConsent() {
     else post('/location', { ...currentVisit, denied: true });
   };
   return (
-    <div className={`consent-bar ${closing ? 'closing' : ''}`} role="dialog" aria-live="polite" aria-label="Permissão de localização">
-      <p>
-        Posso usar a sua <b>localização aproximada</b> (só a cidade) para saber de onde vêm as visitas do site?
-        O endereço exato não é guardado.
-      </p>
+    <div className={`consent-bar ${closing ? 'closing' : ''}`} role="region" aria-live="polite" aria-label="Permissão de localização">
+      <p>Posso saber sua <b>cidade</b> (aproximada) para as estatísticas do site?</p>
       <div className="consent-actions">
-        <button className="btn btn-line small" onClick={() => answer(false)}>Não permitir</button>
-        <button className="btn btn-accent small" onClick={() => answer(true)}>Permitir</button>
+        <button className="consent-btn" onClick={() => answer(false)}>Não</button>
+        <button className="consent-btn yes" onClick={() => answer(true)}>Sim</button>
       </div>
     </div>
   );

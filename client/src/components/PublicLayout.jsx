@@ -21,7 +21,7 @@ export default function PublicLayout() {
   }, []);
   const isHome = location.pathname === '/';
   // No right-click / drag / long-press saving of portfolio photos (text stays usable)
-  useImageProtection(true, 'img, .work-cover, .sub-cover, .ss-stage, .car-stage, .car-thumbs, .lightbox, .next-work');
+  useImageProtection(true, 'img, .work-cover, .sub-cover, .ss-stage, .car-stage, .car-thumbs, .lightbox, .next-work', { keys: false });
 
   // Scroll to #work (etc.) when a link points at a section
   useEffect(() => {
@@ -52,6 +52,7 @@ export default function PublicLayout() {
         )}
         {contact.whatsapp && <a href={contact.whatsapp} target="_blank" rel="noreferrer">WhatsApp ↗</a>}
         {contact.email && <a href={contact.email}>E-mail</a>}
+        <Link to="/privacidade">Privacidade</Link>
         <Link to="/client" className="footer-client">Área do cliente</Link>
         <Link to="/admin" className="footer-admin">Admin</Link>
       </footer>

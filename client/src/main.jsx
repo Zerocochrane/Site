@@ -15,6 +15,7 @@ import { SettingsProvider } from './settings.jsx';
 import PublicLayout from './components/PublicLayout.jsx';
 import Home from './pages/Home.jsx';
 import Availability from './pages/Availability.jsx';
+import Privacy from './pages/Privacy.jsx';
 import Group from './pages/Group.jsx';
 import Admin from './admin/Admin.jsx';
 import ClientArea from './pages/ClientArea.jsx';
@@ -29,6 +30,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/work/:slug" element={<Group />} />
             <Route path="/work/:slug/:sub" element={<Group />} />
             <Route path="/availability" element={<Availability />} />
+            <Route path="/privacidade" element={<Privacy />} />
           </Route>
           <Route path="/admin/*" element={<Admin />} />
           <Route path="/client/*" element={<ClientArea />} />

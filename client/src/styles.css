@@ -1013,3 +1013,23 @@ html { font-variant-numeric: lining-nums; }
 .booking-date.nodate p { margin: 0 0 6px; }
 .booking-date.nodate .muted { font-family: var(--sans, inherit); font-size: 14px; display: block; line-height: 1.5; }
 .link-btn { background: none; border: 0; padding: 0; color: var(--accent-ink); text-decoration: underline; cursor: pointer; font: inherit; }
+
+/* ---- Pedido de localização: discreto (uma linha, canto da tela) ---- */
+.consent-bar { left: auto; right: 16px; bottom: 16px; max-width: 380px; margin: 0; padding: 10px 12px 10px 16px; gap: 12px; border-radius: 999px; animation: consent-in .4s ease-out; }
+.consent-bar p { font-size: 13px; line-height: 1.35; color: var(--muted); }
+.consent-bar p b { color: var(--ink); font-weight: 500; }
+.consent-actions { gap: 6px; }
+.consent-btn { border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 12px; letter-spacing: .06em; cursor: pointer; }
+.consent-btn.yes { background: var(--accent); border-color: var(--accent); }
+.consent-btn:hover { border-color: var(--accent-dark); }
+@media (max-width: 600px) {
+  .consent-bar { flex-direction: row; align-items: center; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); max-width: none; padding: 8px 8px 8px 14px; }
+  .consent-bar p { font-size: 12px; }
+  .consent-actions .btn, .consent-btn { flex: none; }
+}
+
+/* ---- Privacidade ---- */
+.privacy { max-width: 720px; margin: 0 auto; padding: clamp(32px, 6vw, 72px) var(--gutter) 80px; }
+.privacy ul { padding-left: 18px; line-height: 1.7; }
+.privacy li { margin-bottom: 10px; }
+.privacy a { color: var(--accent-ink); }

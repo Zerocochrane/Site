@@ -5,7 +5,8 @@ import { useEffect } from 'react';
  * long-press on phones, and Ctrl/Cmd+S / Ctrl/Cmd+P. (Screenshots can't be blocked by any website,
  * which is why proofs are also reduced and watermarked on the server.)
  */
-export default function useImageProtection(active = true, scope = null) {
+export default function useImageProtection(active = true, scope = null, { keys = true } = {}) {
+  // keys: also block Ctrl/Cmd+S/P/U (client area only — on the public site that just gets in the way)
   // scope: CSS selector; if given, the right-click menu is only blocked on/around those elements
   useEffect(() => {
     if (!active) return;
@@ -15,7 +16,7 @@ export default function useImageProtection(active = true, scope = null) {
     };
     document.addEventListener('contextmenu', stop);
     document.addEventListener('dragstart', stop);
-    document.addEventListener('keydown', onKey);
+    if (keys) document.addEventListener('keydown', onKey);
     document.body.classList.add('protect');
     return () => {
       document.removeEventListener('contextmenu', stop);
@@ -23,5 +24,5 @@ export default function useImageProtection(active = true, scope = null) {
       document.removeEventListener('keydown', onKey);
       document.body.classList.remove('protect');
     };
-  }, [active, scope]);
+  }, [active, scope, keys]);
 }
