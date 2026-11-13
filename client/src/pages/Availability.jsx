@@ -3,6 +3,7 @@ import { api, todayISO, prettyDate, toISO } from '../api.js';
 import { useSettings } from '../settings.jsx';
 import Calendar from '../components/Calendar.jsx';
 import { contactLinks } from '../contact.js';
+import usePageTitle from '../pageTitle.js';
 
 const DURATIONS = [1, 2, 3, 4, 5, 6, 8, 10, 12];
 const REFERRALS = ['Instagram', 'Google', 'Indicação', 'Facebook', 'Outro'];
@@ -15,6 +16,7 @@ const FIELD_NAMES = { categoryId: 'o que agendar', durationHours: 'duração', n
 
 export default function Availability() {
   const { settings } = useSettings();
+  usePageTitle('Agendar');
   const [month, setMonth] = useState(() => new Date());
   const [days, setDays] = useState({});
   const [categories, setCategories] = useState([]);

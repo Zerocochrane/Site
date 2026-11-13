@@ -5,6 +5,8 @@ import Carousel from '../components/Carousel.jsx';
 import Lightbox from '../components/Lightbox.jsx';
 import Slideshow from '../components/Slideshow.jsx';
 import useReveal from '../components/useReveal.js';
+import NotFound from './NotFound.jsx';
+import usePageTitle from '../pageTitle.js';
 
 const longDate = (iso) => prettyDate(iso, { day: 'numeric', month: 'long', year: 'numeric' });
 const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -25,6 +27,8 @@ export default function Group() {
   const [error, setError] = useState(false);
   const location = useLocation();
   useReveal([group]);
+  // The cards page owns the tab title; a collection (SubgroupView) sets its own
+  usePageTitle(group && !sub && group.subgroups.length !== 1 ? group.name : false);
 
   useEffect(() => {
     setGroup(null); setError(false);
@@ -34,7 +38,7 @@ export default function Group() {
   // Go to the top on a new page, but not when switching subgroups with the chips
   useEffect(() => { if (!location.state?.keepScroll) window.scrollTo(0, 0); }, [slug, sub]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (error) return <NotFound />;
+  if (error) return <NotFound what="trabalho" />;
   if (!group) return <section className="group-page"><p className="muted">Carregando…</p></section>;
 
   const gi = allGroups.findIndex((g) => g.id === group.id);
@@ -101,11 +105,9 @@ function SubgroupView({ subKey, group, single, nextGroup }) {
     setError(false); setOpen(-1);
     api(`/subgroups/${subKey}`).then(setData).catch(() => setError(true));
   }, [subKey]);
-  useEffect(() => {
-    if (data) document.title = `${single ? group.name : `${data.name} — ${group.name}`} — ${document.title.split(' — ').pop()}`;
-  }, [data, group.name, single]);
+  usePageTitle(...(data ? (single ? [group.name] : [data.name, group.name]) : [group.name]));
 
-  if (error || (data && data.groupId !== group.id)) return <NotFound />;
+  if (error || (data && data.groupId !== group.id)) return <NotFound what="trabalho" />;
   if (!data) return <section className="group-page"><p className="muted">Carregando…</p></section>;
 
   const si = data.siblings.findIndex((s) => s.id === data.id);
@@ -168,12 +170,10 @@ function Footer({ next }) {
       )}
       <div className="group-cta">
         <p>Gostou do que viu?</p>
-        <Link to="/agendar" className="btn btn-dark">Agendar uma data →</Link>
+        <Link to="/agendar" className="btn btn-dark">Agendar uma data</Link>
       </div>
     </section>
   );
 }
 
-function NotFound() {
-  return <section className="group-page"><p>Este trabalho não foi encontrado. <Link to="/">Ver todos os trabalhos</Link></p></section>;
-}
+

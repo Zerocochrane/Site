@@ -19,9 +19,9 @@ export default function Lightbox({ photos, index, onClose, onIndex }) {
       <button className="lb-close" onClick={onClose} aria-label="Fechar">×</button>
       <button className="lb-arrow left" onClick={(e) => { e.stopPropagation(); onIndex((index - 1 + photos.length) % photos.length); }} aria-label="Anterior">←</button>
       <figure onClick={(e) => e.stopPropagation()}>
-        <img src={photo.url} alt={photo.title} />
+        <img src={photo.url} alt={photo.title || ''} />
         <figcaption>
-          <span>{photo.title}</span>
+          <span>{photo.title || ''}</span>
           <span>{String(index + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}</span>
         </figcaption>
       </figure>

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import { useSettings } from '../settings.jsx';
 import { contactLinks } from '../contact.js';
+import usePageTitle from '../pageTitle.js';
 
 const CONSENT_KEY = 'site_location';
 
@@ -8,7 +8,7 @@ const CONSENT_KEY = 'site_location';
 export default function Privacy() {
   const { settings } = useSettings();
   const contact = contactLinks(settings);
-  useEffect(() => { document.title = `Privacidade — ${settings?.name || ''}`; }, [settings?.name]);
+  usePageTitle('Privacidade');
   let answer = null;
   try { answer = localStorage.getItem(CONSENT_KEY); } catch { /* modo privado */ }
   const reset = () => { try { localStorage.removeItem(CONSENT_KEY); } catch { /* ignore */ } window.location.reload(); };

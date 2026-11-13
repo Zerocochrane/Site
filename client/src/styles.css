@@ -1113,3 +1113,18 @@ html { font-variant-numeric: lining-nums; }
 .site-footer .footer-copy { color: inherit; text-decoration: none; }
 .site-footer .footer-copy:hover { color: inherit; }
 .site-footer .footer-copy:focus-visible { outline: 1px solid var(--accent-dark); outline-offset: 3px; }
+
+/* ==== UX re-review fixes ==== */
+/* 1. Selection limit: heart still tappable (explains the limit), but looks unavailable */
+.ca-heart.limit { opacity: .45; }
+.ca-viewer .btn.limit { opacity: 1; background: transparent; border-color: #7d848c; color: #d3d7dc; box-shadow: none; }
+.ca-toast { z-index: 130; } /* also visible over the full-screen viewer */
+
+/* 2. Página não encontrada */
+.not-found { max-width: 720px; margin: 0 auto; padding: clamp(48px, 10vw, 120px) var(--gutter); min-height: 50vh; }
+.not-found .page-title { margin-bottom: 12px; }
+.not-found-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
+
+/* 7. Full-screen viewer: solid background, nothing from the page shows through */
+.lightbox { background: #0b0b0c; z-index: 120; }
+body:has(.lightbox) .consent-bar, body:has(.lightbox) .undo-toast { display: none; }

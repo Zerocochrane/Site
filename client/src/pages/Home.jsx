@@ -4,10 +4,12 @@ import { api } from '../api.js';
 import { useSettings } from '../settings.jsx';
 import { initials } from '../initials.js';
 import useReveal from '../components/useReveal.js';
+import usePageTitle from '../pageTitle.js';
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 export default function Home() {
+  usePageTitle();
   const { settings } = useSettings();
   const [groups, setGroups] = useState(null);
 
@@ -20,7 +22,7 @@ export default function Home() {
         <h1 className="hero-mark" aria-label={settings?.name || ''}>{initials(settings?.name) || ' '}</h1>
         <hr className="hero-rule" />
         {settings?.tagline && <p className="hero-tag">{settings.tagline}</p>}
-        <Link to="/agendar" className="btn btn-line small">Ver datas disponíveis</Link>
+        <Link to="/agendar" className="btn btn-line small">Agendar uma data</Link>
       </section>
 
       <section className="work" id="work">
@@ -53,7 +55,7 @@ export default function Home() {
       {settings?.about && (
         <section className="about">
           <p className="about-text reveal">{settings.about}</p>
-          <Link to="/agendar" className="btn btn-dark small">Ver disponibilidade</Link>
+          <Link to="/agendar" className="btn btn-dark small">Agendar uma data</Link>
         </section>
       )}
     </>

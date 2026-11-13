@@ -86,7 +86,7 @@ router.post('/:id/photos', requireAdmin, (req, res, next) => {
   for (const f of files) {
     try {
       const out = await makePublicCopy(f.path, f.originalname); // watermarked public copy + private original
-      const title = path.parse(f.originalname).name.replace(/[-_]+/g, ' ').trim();
+      const title = ''; // captions only when the photographer writes one (file names like "IMG_4532" are not captions)
       ids.push(insert.run(s.group_id, s.id, out.filename, out.origFile, title, out.width, out.height, pos++).lastInsertRowid);
     } catch (err) {
       console.error(`Could not process ${f.originalname}:`, err.message);

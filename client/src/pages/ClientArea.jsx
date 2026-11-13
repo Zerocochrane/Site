@@ -240,7 +240,8 @@ function Gallery({ me, setMe, onExpired }) {
                 </button>
                 <span className="ca-num">{p.number}</span>
                 {!confirmed ? (
-                  <button className={`ca-heart ${p.selected ? 'on' : ''}`} onClick={() => toggle(p)} aria-pressed={p.selected} aria-label={p.selected ? 'Remover da seleção' : 'Escolher esta foto'} disabled={!p.selected && full}>
+                  <button className={`ca-heart ${p.selected ? 'on' : ''} ${!p.selected && full ? 'limit' : ''}`} onClick={() => toggle(p)} aria-pressed={p.selected}
+                    aria-label={p.selected ? 'Remover da seleção' : full ? `Limite de ${me.selectionLimit} fotos atingido` : 'Escolher esta foto'}>
                     {p.selected ? '♥' : '♡'}
                   </button>
                 ) : <span className="ca-heart on static">♥</span>}
@@ -310,7 +311,7 @@ function Viewer({ items, index, onIndex, onClose, selectable, full, onToggle, li
         <figcaption>
           <span>Foto {item.number} · {index + 1} / {items.length}</span>
           {selectable && (
-            <button className={`btn small ${current?.selected ? 'btn-accent' : 'btn-line light'}`} onClick={() => onToggle(current)} disabled={!current?.selected && full}>
+            <button className={`btn small ${current?.selected ? 'btn-accent' : 'btn-line light'} ${!current?.selected && full ? 'limit' : ''}`} onClick={() => onToggle(current)}>
               {current?.selected ? '♥ Escolhida' : full ? 'Limite atingido' : '♡ Escolher'}
             </button>
           )}

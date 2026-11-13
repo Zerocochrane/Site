@@ -113,6 +113,21 @@ db.transaction(() => {
   if (!pc.includes('wm')) db.exec('ALTER TABLE photos ADD COLUMN wm INTEGER NOT NULL DEFAULT 0');
 }
 
+// --- Migration: captions that are just camera file names (v1.10, runs once) ----
+// Earlier uploads used the file name as caption ("IMG 4532", "DSC 0081"…). Clear those; keep captions people wrote.
+export const FILE_NAME_CAPTION = /^(img|dsc[fn]?|mg|pxl|dji|gopr|gopro|mvimg|vid|p|dcim|photo|foto|image|imagem|screenshot|captura de tela|whatsapp image|wp|picsart|edited)?\s*\d[\d\s.]*(at\s+[\d\s.]+)?(\s*(\(\d+\)|copy|copia|cópia|edit|editada|final))*\s*$/i;
+if (!db.prepare("SELECT 1 FROM settings WHERE key = 'captionCleanupV1'").get()) {
+  const clear = db.prepare("UPDATE photos SET title = '' WHERE id = ?");
+  let n = 0;
+  db.transaction(() => {
+    for (const p of db.prepare("SELECT id, title FROM photos WHERE title != ''").all()) {
+      if (FILE_NAME_CAPTION.test(p.title.trim())) { clear.run(p.id); n++; }
+    }
+    db.prepare("INSERT INTO settings (key, value) VALUES ('captionCleanupV1', ?)").run(String(n));
+  })();
+  if (n) console.log(`Removed ${n} caption(s) that were just file names.`);
+}
+
 // --- Migration: subgroup date (v1.9) -----------------------------------------
 // event_date = 'YYYY-MM-DD' or '' (not set yet).
 {

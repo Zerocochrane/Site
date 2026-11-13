@@ -22,6 +22,7 @@ import PublicLayout from './components/PublicLayout.jsx';
 import Home from './pages/Home.jsx';
 import Availability from './pages/Availability.jsx';
 import Privacy from './pages/Privacy.jsx';
+import NotFound from './pages/NotFound.jsx';
 import Group from './pages/Group.jsx';
 import Admin from './admin/Admin.jsx';
 import ClientArea from './pages/ClientArea.jsx';
@@ -39,6 +40,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="/work/*" element={<Moved from="/work" to="/trabalhos" />} />
             <Route path="/availability" element={<Moved from="/availability" to="/agendar" />} />
             <Route path="/privacidade" element={<Privacy />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
           <Route path="/admin/*" element={<Admin />} />
           <Route path="/cliente/*" element={<ClientArea />} />

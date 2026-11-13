@@ -7,7 +7,6 @@ export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState(null);
   const reload = useCallback(() => api('/settings').then(setSettings).catch(() => {}), []);
   useEffect(() => { reload(); }, [reload]);
-  useEffect(() => { if (settings?.name) document.title = `${settings.name} — Fotografia`; }, [settings?.name]);
   return <Ctx.Provider value={{ settings, reload, setSettings }}>{children}</Ctx.Provider>;
 }
 
