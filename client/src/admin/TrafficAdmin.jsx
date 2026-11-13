@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api.js';
 import MonthBarChart from '../components/MonthBarChart.jsx';
+import Help from './Help.jsx';
 
 const shiftMonth = (ym, n) => { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7); };
 const monthLabel = (ym, opts = { month: 'long', year: 'numeric' }) => new Date(`${ym}-15T12:00:00Z`).toLocaleDateString('pt-BR', { ...opts, timeZone: 'UTC' });
@@ -39,10 +40,10 @@ export default function TrafficAdmin() {
   return (
     <section className="admin-section traffic">
       <div className="admin-title-row"><h1>Tráfego</h1></div>
-      <p className="hint">
+      <Help>
         Visitas ao site público (portfólio e agenda). Uma <b>visita</b> é cada vez que alguém abre o site; ela termina após 30 minutos sem atividade.
         Você não é contada enquanto estiver logada no painel. A cidade só aparece quando o visitante permite o uso da localização.
-      </p>
+      </Help>
       {insecure && (
         <p className="notice warn">
           O site está sendo aberto sem HTTPS, e os navegadores só pedem a localização em sites seguros (https://).

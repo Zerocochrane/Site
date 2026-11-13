@@ -1,14 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { SortableGrid, moveBy, DragGrip } from './Sortable.jsx';
 import SaveBar from './SaveBar.jsx';
 import { useDraft, useUnsaved } from './unsaved.jsx';
 import useFlash from './useFlash.js';
+import Help from './Help.jsx';
 
 export default function PortfolioAdmin() {
   const { saved, draft: groups, setDraft, dirty, load, commit, discard } = useDraft(null);
   const [name, setName] = useState('');
+  const [nameErr, setNameErr] = useState(false);
+  const nameRef = useRef(null);
   const [msg, flash] = useFlash();
   const navigate = useNavigate();
   const { confirmLeave } = useUnsaved();
@@ -17,6 +20,7 @@ export default function PortfolioAdmin() {
 
   const create = async (e) => {
     e.preventDefault();
+    if (!name.trim()) { setNameErr(true); nameRef.current?.focus(); return; }
     if (!confirmLeave()) return;
     try {
       const g = await api('/groups', { method: 'POST', body: { name } });
@@ -37,11 +41,12 @@ export default function PortfolioAdmin() {
         <h1>Portfólio <span className="count">{groups?.length ?? '…'} grupos</span></h1>
         {msg && <p className="toast">{msg}</p>}
       </div>
-      <p className="hint">Cada grupo é um tema (Casamentos, Retratos, Espetáculos…) e contém subgrupos com as fotos. Os visitantes veem os grupos nesta ordem, abrem um e escolhem um subgrupo para ver as fotos. Grupos sem fotos ficam ocultos no site.</p>
+      <Help>Cada grupo é um tema (Casamentos, Retratos, Espetáculos…) e contém subgrupos com as fotos. Os visitantes veem os grupos nesta ordem, abrem um e escolhem um subgrupo para ver as fotos. Grupos sem fotos ficam ocultos no site.</Help>
 
       <form className="new-group" onSubmit={create}>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome do novo grupo — ex.: “Casamentos”" maxLength={120} />
-        <button className="btn btn-accent" disabled={!name.trim()}>+ Criar grupo</button>
+        <input ref={nameRef} value={name} onChange={(e) => { setName(e.target.value); setNameErr(false); }} placeholder="Nome do novo grupo — ex.: “Casamentos”" maxLength={120} aria-invalid={nameErr || undefined} />
+        <button className="btn btn-accent">+ Criar grupo</button>
+        {nameErr && <span className="err new-group-err">Digite o nome do grupo primeiro.</span>}
       </form>
 
       {groups?.length === 0 && <p className="muted">Nenhum grupo ainda. Crie o primeiro acima.</p>}

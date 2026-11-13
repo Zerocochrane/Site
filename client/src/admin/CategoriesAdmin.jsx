@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import SaveBar from './SaveBar.jsx';
 import { useDraft } from './unsaved.jsx';
 import AgendaTabs from './AgendaTabs.jsx';
+import Help from './Help.jsx';
 
 const TYPES = [
   { key: 'text', label: 'Texto' },
@@ -67,10 +68,10 @@ export default function CategoriesAdmin() {
         <h2 className="h2-display">Categorias</h2>
         <button className="btn btn-accent" onClick={addCategory}>+ Nova categoria</button>
       </div>
-      <p className="hint">
+      <Help>
         As categorias aparecem no formulário de agendamento. Todos os formulários já pedem <b>Nome*</b>, <b>E-mail*</b>, <b>Telefone*</b>,{' '}
         <b>Como me conheceu</b> (com nome e Instagram de quem indicou) e <b>Observações</b>. Aqui você escolhe o tipo, a duração e os campos extras de cada categoria.
-      </p>
+      </Help>
 
       {cats.length === 0 && <p className="muted">Nenhuma categoria ainda. Sem categorias, o formulário de agendamento fica vazio.</p>}
 

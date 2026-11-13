@@ -1080,3 +1080,31 @@ html { font-variant-numeric: lining-nums; }
 .ca-forgot-box p { margin: 0; }
 .ca-forgot-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .ca-forgot-actions .btn { text-decoration: none; }
+
+/* ---- "Desfazer" (undo) notice ---- */
+.undo-toast { position: fixed; z-index: 70; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 14px; background: var(--ink); color: #fff; padding: 10px 10px 10px 18px; border-radius: 999px; box-shadow: var(--shadow); font-size: 14px; max-width: calc(100vw - 24px); animation: consent-in .25s ease-out; }
+.undo-toast button { background: none; border: 0; color: var(--accent); font: inherit; font-weight: 600; letter-spacing: .04em; cursor: pointer; padding: 6px 8px; text-transform: uppercase; font-size: 12px; }
+.undo-toast .undo-close { color: #aab2bd; font-size: 18px; padding: 2px 8px; text-transform: none; }
+
+/* ==== UX Phase 5 — admin ==== */
+.new-group { flex-wrap: wrap; }
+.new-group-err { flex-basis: 100%; font-size: 13px; }
+.new-group input[aria-invalid] { border-color: #c0392b; }
+
+/* "Como funciona?" */
+.help { margin: 0 0 20px; max-width: 760px; }
+.help summary { cursor: pointer; width: fit-content; font-size: 13px; font-weight: 500; color: var(--accent-ink); list-style: none; display: inline-flex; align-items: center; gap: 6px; padding: 4px 0; }
+.help summary::-webkit-details-marker { display: none; }
+.help summary::before { content: '?'; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1px solid currentColor; font-size: 11px; }
+.help[open] summary { margin-bottom: 6px; }
+.help-body { color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+/* Admin menu: every tab visible on a phone (two rows, no sideways scrolling) */
+.tab-short { display: none; }
+@media (max-width: 700px) {
+  .admin-tabs { display: grid; grid-template-columns: repeat(4, 1fr); overflow: visible; gap: 4px; margin: 0; padding: 0 0 10px; scroll-snap-type: none; }
+  .admin-tabs a { padding: 8px 4px; font-size: 11px; letter-spacing: .04em; text-align: center; white-space: nowrap; }
+  .tab-long { display: none; }
+  .tab-short { display: inline; }
+  .undo-toast { bottom: calc(70px + env(safe-area-inset-bottom)); font-size: 13px; }
+}

@@ -63,7 +63,7 @@ function AdminShell({ onLogout }) {
           <NavLink to="/admin/requests">Pedidos</NavLink>
           <NavLink to="/admin/finance">Financeiro</NavLink>
           <NavLink to="/admin/traffic">Tráfego</NavLink>
-          <NavLink to="/admin/settings">Configurações</NavLink>
+          <NavLink to="/admin/settings"><span className="tab-long">Configurações</span><span className="tab-short" aria-hidden="true">Config.</span></NavLink>
         </nav>
         <button className="link-btn" onClick={logout}>Sair</button>
       </header>

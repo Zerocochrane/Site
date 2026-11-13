@@ -5,6 +5,7 @@ import Calendar from '../components/Calendar.jsx';
 import SaveBar from './SaveBar.jsx';
 import { useDraft } from './unsaved.jsx';
 import AgendaTabs from './AgendaTabs.jsx';
+import Help from './Help.jsx';
 
 const BRUSHES = [
   { key: 'available', label: 'Disponível' },
@@ -94,7 +95,7 @@ export default function CalendarAdmin() {
     <section className="admin-section has-save-bar">
       <div className="admin-title-row"><h1>Agenda</h1></div>
       <AgendaTabs />
-      <p className="hint">Escolha o que marcar e clique nos dias. Clique de novo num dia para limpá-lo. Quando terminar, clique em <b>Salvar alterações</b>. Os clientes só veem os dias marcados como <b>Disponível</b>.</p>
+      <Help>Escolha o que marcar e clique nos dias. Clique de novo num dia para limpá-lo. Quando terminar, clique em <b>Salvar alterações</b>. Os clientes só veem os dias marcados como <b>Disponível</b>.</Help>
 
       <div className="buffer-box panel">
         <label>

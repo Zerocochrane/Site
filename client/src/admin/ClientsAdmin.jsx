@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import WhatsAppButton from './WhatsAppButton.jsx';
 import { STAGES, timeLeft, fmtDateTime, suggestLogin } from './clientUtils.js';
+import Help from './Help.jsx';
 
 const EMPTY = { name: '', email: '', phone: '', username: '', selectionLimit: 30, days: 7 };
 
@@ -42,10 +43,10 @@ export default function ClientsAdmin() {
   return (
     <section className="admin-section">
       <div className="admin-title-row"><h1>Clientes <span className="count">{clients?.length ?? '…'}</span></h1></div>
-      <p className="hint">
+      <Help>
         Cada cliente recebe uma área privada para escolher as fotos. Cadastre o cliente, envie as fotos para escolha e clique em <b>Enviar acesso</b>:
         o sistema cria uma senha e envia os dados de acesso por e-mail. O prazo de seleção começa quando o acesso é enviado.
-      </p>
+      </Help>
 
       {!showNew && <button className="btn btn-accent wide new-client-btn" onClick={() => setShowNew(true)}>+ Novo cliente</button>}
       {showNew && <form className="client-new" onSubmit={create} noValidate>

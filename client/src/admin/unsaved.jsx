@@ -68,5 +68,5 @@ export function useDraft(initial = null) {
   const load = useCallback((v) => { setSaved(v); setDraft(v); }, []);
   const both = useCallback((fn) => { setSaved(fn); setDraft(fn); }, []);
   const discard = useCallback(() => setDraft(saved), [saved]);
-  return { saved, draft, setDraft, dirty, load, both, commit: load, discard };
+  return { saved, draft, setDraft, setSaved, dirty, load, both, commit: load, discard };
 }

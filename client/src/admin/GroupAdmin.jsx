@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, prettyDate } from '../api.js';
 import { SortableGrid, moveBy, DragGrip } from './Sortable.jsx';
@@ -6,6 +6,7 @@ import DetailsEditor from './DetailsEditor.jsx';
 import SaveBar from './SaveBar.jsx';
 import { useDraft, useUnsaved } from './unsaved.jsx';
 import useFlash from './useFlash.js';
+import Help from './Help.jsx';
 
 // Editable parts of a group (kept as a draft until "Save changes")
 const editable = (g) => ({
@@ -22,6 +23,8 @@ export default function GroupAdmin() {
   const [group, setGroup] = useState(null); // server data (subgroups with photos)
   const { saved, draft, setDraft, dirty, load, commit, discard } = useDraft(null);
   const [newName, setNewName] = useState('');
+  const [nameErr, setNameErr] = useState(false);
+  const nameRef = useRef(null);
   const [missing, setMissing] = useState(false);
   const [msg, flash] = useFlash();
 
@@ -58,6 +61,7 @@ export default function GroupAdmin() {
 
   const createSub = async (e) => {
     e.preventDefault();
+    if (!newName.trim()) { setNameErr(true); nameRef.current?.focus(); return; }
     if (!confirmLeave()) return;
     try {
       const s = await api(`/groups/${id}/subgroups`, { method: 'POST', body: { name: newName } });
@@ -90,13 +94,14 @@ export default function GroupAdmin() {
       <div className="admin-sub-head">
         <h2>Subgrupos <span className="count">{subs.length}</span></h2>
       </div>
-      <p className="hint">
+      <Help>
         Os subgrupos guardam as fotos — ex.: um para cada casamento dentro de “Casamentos”. Os visitantes abrem o grupo e escolhem um subgrupo para ver as fotos.
         {subs.length > 1 && ' Arraste para mudar a ordem.'} Subgrupos vazios ficam ocultos no site.
-      </p>
+      </Help>
       <form className="new-group" onSubmit={createSub}>
-        <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome do novo subgrupo — ex.: “Júlia & Rafa”" maxLength={120} />
-        <button className="btn btn-accent" disabled={!newName.trim()}>+ Criar subgrupo</button>
+        <input ref={nameRef} value={newName} onChange={(e) => { setNewName(e.target.value); setNameErr(false); }} placeholder="Nome do novo subgrupo — ex.: “Júlia & Rafa”" maxLength={120} aria-invalid={nameErr || undefined} />
+        <button className="btn btn-accent">+ Criar subgrupo</button>
+        {nameErr && <span className="err new-group-err">Digite o nome do subgrupo primeiro.</span>}
       </form>
 
       {subs.length === 0 && <p className="muted">Nenhum subgrupo ainda. Crie um acima e depois adicione fotos a ele.</p>}

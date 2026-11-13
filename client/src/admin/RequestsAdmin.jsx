@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, prettyDate } from '../api.js';
 import { STATUS_LABEL, KIND_LABEL, durationText } from './requestUtils.js';
+import Help from './Help.jsx';
 
 const FILTER_LABEL = { open: 'Em aberto', confirmed: 'Aceitos', declined: 'Recusados', all: 'Todos' };
 
@@ -24,7 +25,7 @@ export default function RequestsAdmin() {
           ))}
         </div>
       </div>
-      <p className="hint">Os pedidos também chegam por e-mail. Abra um pedido para <b>aceitar</b> ou <b>recusar</b>. Aceitar bloqueia o dia na sua agenda e libera o botão para adicioná-lo ao Google Agenda.</p>
+      <Help>Os pedidos também chegam por e-mail. Abra um pedido para <b>aceitar</b> ou <b>recusar</b>. Aceitar bloqueia o dia na sua agenda e libera o botão para adicioná-lo ao Google Agenda.</Help>
 
       {items === null && <p className="muted">Carregando…</p>}
       {items && shown.length === 0 && <p className="muted">Nada por aqui.</p>}

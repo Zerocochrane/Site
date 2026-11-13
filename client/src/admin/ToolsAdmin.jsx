@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, uploadFiles } from '../api.js';
+import Help from './Help.jsx';
 
 const plural = (n, one, many) => `${n.toLocaleString('pt-BR')} ${n === 1 ? one : many}`;
 
@@ -70,7 +71,7 @@ export default function ToolsAdmin() {
   return (
     <div className="tools">
       <div className="admin-sub-head"><h2>Ferramentas</h2></div>
-      <p className="hint">Crie dados de exemplo para testar o site ou apague tudo para começar de novo. Uma tarefa por vez; você pode sair desta página enquanto ela roda.</p>
+      <Help>Crie dados de exemplo para testar o site ou apague tudo para começar de novo. Uma tarefa por vez; você pode sair desta página enquanto ela roda.</Help>
 
       {error && <p className="err">{error}</p>}
       {job && (

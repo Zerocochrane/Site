@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import MonthBarChart from '../components/MonthBarChart.jsx';
 import { Link } from 'react-router-dom';
 import { api, brl, downloadFile } from '../api.js';
+import Help from './Help.jsx';
 
 const shiftMonth = (ym, n) => { const [y, m] = ym.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 + n, 1)); return d.toISOString().slice(0, 7); };
 const monthLabel = (ym, opts = { month: 'long', year: 'numeric' }) => new Date(`${ym}-15T12:00:00Z`).toLocaleDateString('pt-BR', { ...opts, timeZone: 'UTC' });
@@ -47,7 +48,7 @@ export default function FinanceAdmin() {
           {busy === 'xlsx' ? 'Gerando…' : 'Baixar planilha (.xlsx)'}
         </button>
       </div>
-      <p className="hint">A receita de cada cliente entra no mês da <b>data do evento</b>. Preencha evento, data, duração e pagamento na ficha de cada cliente.</p>
+      <Help>A receita de cada cliente entra no mês da <b>data do evento</b>. Preencha evento, data, duração e pagamento na ficha de cada cliente.</Help>
 
       <MonthBarChart
         title="Receita por mês"

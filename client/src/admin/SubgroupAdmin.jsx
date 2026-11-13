@@ -1,11 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api, uploadPhotos } from '../api.js';
+import { api, auth, uploadPhotos } from '../api.js';
 import { SortableGrid, moveBy, DragGrip } from './Sortable.jsx';
 import DetailsEditor from './DetailsEditor.jsx';
 import SaveBar from './SaveBar.jsx';
 import { useDraft, useUnsaved } from './unsaved.jsx';
 import useFlash from './useFlash.js';
+import useUndo from './useUndo.jsx';
+import Help from './Help.jsx';
+
+// Put a photo back where it was (after "Desfazer"): right after the nearest photo that was before it.
+function reinsert(state, order, entry, cover) {
+  if (!state || state.photos.some((x) => x.id === entry.id)) return state;
+  const at = order.indexOf(entry.id);
+  const before = order.slice(0, Math.max(0, at)).reverse().find((id) => state.photos.some((x) => x.id === id));
+  const photos = [...state.photos];
+  photos.splice(before === undefined ? 0 : photos.findIndex((x) => x.id === before) + 1, 0, entry);
+  return {
+    ...state,
+    photos,
+    coverPhotoId: cover.sub ? entry.id : state.coverPhotoId,
+    groupCoverPhotoId: cover.group ? entry.id : state.groupCoverPhotoId,
+  };
+}
 
 // Editable parts (kept as a draft until "Save changes"). Photos: order + captions.
 const editable = (s) => ({
@@ -23,7 +40,8 @@ export default function SubgroupAdmin() {
   const { setDirty } = useUnsaved();
   const [sub, setSub] = useState(null);        // server data
   const [files, setFiles] = useState({});      // photo id -> photo (url etc.)
-  const { saved, draft, setDraft, dirty, load, both, commit, discard } = useDraft(null);
+  const { saved, draft, setDraft, setSaved, dirty, load, both, commit, discard } = useDraft(null);
+  const undo = useUndo();
   const [targets, setTargets] = useState([]);  // other subgroups, for "move to…"
   const [progress, setProgress] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -105,20 +123,52 @@ export default function SubgroupAdmin() {
     groupCoverPhotoId: clearGroupCover && d.groupCoverPhotoId === pid ? null : d.groupCoverPhotoId,
   }));
 
-  const removePhoto = async (p) => {
-    if (!window.confirm('Excluir esta foto? Isso não pode ser desfeito.')) return;
-    await api(`/photos/${p.id}`, { method: 'DELETE' });
-    dropFromBoth(p.id, { clearGroupCover: true });
-    flash('Foto excluída.');
+  // What we need to put a photo back exactly where it was (order, caption, covers)
+  const snapshot = (pid) => ({
+    saved: { order: saved.photos.map((x) => x.id), entry: saved.photos.find((x) => x.id === pid), cover: { sub: saved.coverPhotoId === pid, group: saved.groupCoverPhotoId === pid } },
+    draft: { order: draft.photos.map((x) => x.id), entry: draft.photos.find((x) => x.id === pid), cover: { sub: draft.coverPhotoId === pid, group: draft.groupCoverPhotoId === pid } },
+  });
+  const restore = (snap) => {
+    setSaved((st) => reinsert(st, snap.saved.order, snap.saved.entry, snap.saved.cover));
+    setDraft((st) => reinsert(st, snap.draft.order, snap.draft.entry, snap.draft.cover));
   };
 
+  // Delete: the photo disappears now, but is only really deleted after 8 s (or when leaving the page)
+  const removePhoto = (p) => {
+    const snap = snapshot(p.id);
+    dropFromBoth(p.id, { clearGroupCover: true });
+    undo.show('Foto excluída.', {
+      onUndo: () => restore(snap),
+      onCommit: () => {
+        fetch(`/api/photos/${p.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${auth.get()}` }, keepalive: true })
+          .then((r) => { if (!r.ok && r.status !== 404) flash('Não foi possível excluir a foto. Recarregue a página.'); })
+          .catch(() => flash('Sem conexão: a foto não foi excluída. Recarregue a página.'));
+      },
+    });
+  };
+
+  // Move: happens right away; "Desfazer" moves it back and restores order and covers
   const moveTo = async (p, targetId) => {
     const target = targets.find((g) => g.subs.some((s) => String(s.id) === String(targetId)));
     const tSub = target?.subs.find((s) => String(s.id) === String(targetId));
-    if (!window.confirm(`Mover esta foto para “${tSub?.name}”${target?.id !== sub.groupId ? ` em “${target?.name}”` : ''}? Isso acontece na hora.`)) return;
-    await api(`/photos/${p.id}`, { method: 'PATCH', body: { subgroupId: Number(targetId) } });
-    dropFromBoth(p.id, { clearGroupCover: target?.id !== sub.groupId });
-    flash(`Movida para “${tSub?.name}”.`);
+    const otherGroup = target?.id !== sub.groupId;
+    const snap = snapshot(p.id);
+    try {
+      await api(`/photos/${p.id}`, { method: 'PATCH', body: { subgroupId: Number(targetId) } });
+    } catch (err) { flash(err.message); return; }
+    dropFromBoth(p.id, { clearGroupCover: otherGroup });
+    undo.show(`Movida para “${tSub?.name}”${otherGroup ? ` (${target?.name})` : ''}.`, {
+      onUndo: async () => {
+        try {
+          await api(`/photos/${p.id}`, { method: 'PATCH', body: { subgroupId: Number(subId) } });
+          await api(`/subgroups/${subId}/photos/order`, { method: 'PUT', body: { ids: snap.saved.order } });
+          if (snap.saved.cover.sub) await api(`/subgroups/${subId}`, { method: 'PATCH', body: { coverPhotoId: p.id } });
+          if (snap.saved.cover.group && otherGroup) await api(`/groups/${sub.groupId}`, { method: 'PATCH', body: { coverPhotoId: p.id } });
+          restore(snap);
+          flash('Foto de volta.');
+        } catch (err) { flash(err.message); }
+      },
+    });
   };
 
   const deleteSub = async () => {
@@ -177,10 +227,10 @@ export default function SubgroupAdmin() {
       </div>
 
       {photos.length > 0 && (
-        <p className="hint">
+        <Help>
           Arraste para definir a ordem do carrossel e edite as legendas; depois clique em <b>Salvar alterações</b>. <b>★ Capa do grupo</b> torna a foto a capa de
           “{sub.group?.name}” na página inicial; <b>Capa do subgrupo</b> define a imagem que representa este subgrupo.
-        </p>
+        </Help>
       )}
 
       <SortableGrid
@@ -211,6 +261,7 @@ export default function SubgroupAdmin() {
         )}
       />
 
+      {undo.element}
       <SaveBar dirty={dirty} onSave={save} onDiscard={discard} />
     </section>
   );
