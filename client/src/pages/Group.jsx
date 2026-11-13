@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import Carousel from '../components/Carousel.jsx';
 import Lightbox from '../components/Lightbox.jsx';
 import Slideshow from '../components/Slideshow.jsx';
+import useReveal from '../components/useReveal.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -18,6 +19,7 @@ export default function Group() {
   const [allGroups, setAllGroups] = useState([]);
   const [error, setError] = useState(false);
   const location = useLocation();
+  useReveal([group]);
 
   useEffect(() => {
     setGroup(null); setError(false);
@@ -56,7 +58,7 @@ export default function Group() {
         <div className="section-label sub-index-label"><span>{pad(group.subgroups.length)}</span> Todas as coleções</div>
         <div className="sub-grid">
           {group.subgroups.map((s, i) => (
-            <Link key={s.id} to={s.path} className="sub-card">
+            <Link key={s.id} to={s.path} className="sub-card reveal" style={{ '--d': `${(i % 3) * 110}ms` }}>
               <div className="sub-cover">{s.coverUrl && <img src={s.coverUrl} alt={s.name} loading={i < 4 ? 'eager' : 'lazy'} />}</div>
               <div className="sub-caption">
                 <span className="work-num">{pad(i + 1)}</span>

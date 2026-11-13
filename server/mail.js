@@ -37,16 +37,16 @@ const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '
 /** Simple branded HTML email: paragraphs, an optional details box, and an optional button. */
 export function layout({ title, paragraphs, details, button, footer }) {
   const rows = details
-    ? `<table role="presentation" style="margin:20px 0;border:2px solid #d9d9d9;border-collapse:collapse;width:100%">${details
+    ? `<table role="presentation" style="margin:20px 0;border:1px solid #dde2e8;border-collapse:collapse;width:100%">${details
         .map(([k, v]) => `<tr><td style="padding:10px 14px;color:#656565;font-size:13px;text-transform:uppercase;letter-spacing:.06em;width:120px">${escapeHtml(k)}</td><td style="padding:10px 14px;font-size:16px;font-weight:700;font-family:Consolas,Menlo,monospace">${escapeHtml(v)}</td></tr>`)
         .join('')}</table>`
     : '';
   const btn = button
-    ? `<p style="margin:26px 0"><a href="${button.href}" style="background:#3a4179;color:#ffffff;text-decoration:none;padding:14px 24px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:14px;display:inline-block">${escapeHtml(button.label)}</a></p>`
+    ? `<p style="margin:26px 0"><a href="${button.href}" style="background:#a9c6e2;color:#2a2f36;text-decoration:none;padding:13px 26px;border-radius:999px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;font-size:14px;display:inline-block">${escapeHtml(button.label)}</a></p>`
     : '';
   return `<!doctype html><html lang="pt-BR"><body style="margin:0;background:#f7f7f7;font-family:Helvetica,Arial,sans-serif;color:#222">
-    <div style="max-width:560px;margin:0 auto;background:#ffffff;padding:32px;border-top:6px solid #3a4179">
-      <h1 style="font-size:26px;margin:0 0 18px;text-transform:uppercase;letter-spacing:.02em">${escapeHtml(title)}</h1>
+    <div style="max-width:560px;margin:0 auto;background:#ffffff;padding:32px;border-top:4px solid #a9c6e2;border-radius:12px">
+      <h1 style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:26px;margin:0 0 18px;color:#2a2f36">${escapeHtml(title)}</h1>
       ${paragraphs.map((p) => `<p style="font-size:16px;line-height:1.55;margin:0 0 12px">${escapeHtml(p)}</p>`).join('')}
       ${rows}${btn}
       ${footer ? `<p style="font-size:13px;color:#656565;margin-top:28px">${escapeHtml(footer)}</p>` : ''}

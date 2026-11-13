@@ -1,5 +1,6 @@
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { initials } from '../initials.js';
 import { useSettings } from '../settings.jsx';
 import useImageProtection from './useImageProtection.js';
 import { useVisitTracking, LocationConsent } from '../tracking.jsx';
@@ -8,6 +9,15 @@ export default function PublicLayout() {
   const { settings } = useSettings();
   const location = useLocation();
   useVisitTracking(location.pathname);
+  // Cabeçalho: as iniciais só aparecem no topo depois que a capa da página inicial sai da tela
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 260);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+  const isHome = location.pathname === '/';
   // No right-click / drag / long-press saving of portfolio photos (text stays usable)
   useImageProtection(true, 'img, .work-cover, .sub-cover, .ss-stage, .car-stage, .car-thumbs, .lightbox, .next-work');
 
@@ -19,10 +29,14 @@ export default function PublicLayout() {
   }, [location]);
   return (
     <>
-      <header className="site-header">
-        <Link to="/" className="logo">{settings?.name || ' '}</Link>
-        <nav>
-          <NavLink to="/#work" className={() => (location.pathname === '/' || location.pathname.startsWith('/work') ? 'active' : '')}>Trabalhos</NavLink>
+      <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
+        <nav className="nav-left">
+          <NavLink to="/#work" className={() => (location.pathname.startsWith('/work') ? 'active' : '')}>Trabalhos</NavLink>
+        </nav>
+        <Link to="/" className={`logo-mark ${isHome && !scrolled ? 'hide' : ''}`} aria-label={settings?.name || 'Início'}>
+          {initials(settings?.name)}
+        </Link>
+        <nav className="nav-right">
           <NavLink to="/availability" className="nav-cta">Agendar</NavLink>
         </nav>
       </header>

@@ -1,6 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+// Fontes servidas pelo próprio site (sem Google Fonts: mais rápido e sem enviar o IP dos visitantes a terceiros)
+import '@fontsource/cormorant-garamond/latin-300.css';
+import '@fontsource/cormorant-garamond/latin-400.css';
+import '@fontsource/cormorant-garamond/latin-500.css';
+import '@fontsource/cormorant-garamond/latin-400-italic.css';
+import '@fontsource/inter/latin-300.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
 import './styles.css';
 import { SettingsProvider } from './settings.jsx';
 import PublicLayout from './components/PublicLayout.jsx';
