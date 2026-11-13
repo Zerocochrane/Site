@@ -1108,3 +1108,8 @@ html { font-variant-numeric: lining-nums; }
   .tab-short { display: inline; }
   .undo-toast { bottom: calc(70px + env(safe-area-inset-bottom)); font-size: 13px; }
 }
+
+/* Copyright line = discreet admin link (same look as plain text) */
+.site-footer .footer-copy { color: inherit; text-decoration: none; }
+.site-footer .footer-copy:hover { color: inherit; }
+.site-footer .footer-copy:focus-visible { outline: 1px solid var(--accent-dark); outline-offset: 3px; }

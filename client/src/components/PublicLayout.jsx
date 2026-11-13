@@ -44,7 +44,8 @@ export default function PublicLayout() {
       </header>
       <main><Outlet /></main>
       <footer className="site-footer">
-        <span>© {new Date().getFullYear()} {settings?.name}</span>
+        {/* Discreet way into the admin: the copyright line is the login link (looks like plain text) */}
+        <Link to="/admin" className="footer-copy" title="Área da fotógrafa">© {new Date().getFullYear()} {settings?.name}</Link>
         {settings?.instagram && (
           <a href={`https://instagram.com/${settings.instagram.replace(/^@/, '')}`} target="_blank" rel="noreferrer">
             Instagram ↗
