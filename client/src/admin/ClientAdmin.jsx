@@ -46,7 +46,7 @@ export default function ClientAdmin() {
 
   const stage = STAGES[c.stage];
   const sent = !!c.accessSentAt;
-  const loginLink = `${window.location.origin}/client`;
+  const loginLink = `${window.location.origin}/cliente`;
   const selected = c.proofs.filter((p) => p.selected);
   const say = (t) => { setNotice(t); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   const emailNote = (r) => (r.emailed ? 'E-mail enviado ao cliente.' : r.emailError ? `Não foi possível enviar o e-mail (${r.emailError}).` : 'O e-mail não está configurado no servidor, então nada foi enviado — compartilhe os dados você mesma.');

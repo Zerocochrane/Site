@@ -3,7 +3,7 @@ import { sendMail, layout, siteUrl, fmtDateTime } from './mail.js';
 import { getSettings } from './db.js';
 import { RETENTION_MONTHS } from './clientsDb.js';
 
-const loginUrl = () => `${siteUrl()}/client`;
+const loginUrl = () => `${siteUrl()}/cliente`;
 const studio = () => getSettings().name || 'Sua fotógrafa';
 const replyTo = () => process.env.PHOTOGRAPHER_EMAIL || undefined;
 const first = (name) => String(name).trim().split(/\s+/)[0];

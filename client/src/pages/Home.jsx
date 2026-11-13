@@ -20,7 +20,7 @@ export default function Home() {
         <h1 className="hero-mark" aria-label={settings?.name || ''}>{initials(settings?.name) || ' '}</h1>
         <hr className="hero-rule" />
         {settings?.tagline && <p className="hero-tag">{settings.tagline}</p>}
-        <Link to="/availability" className="btn btn-line small">Ver datas disponíveis</Link>
+        <Link to="/agendar" className="btn btn-line small">Ver datas disponíveis</Link>
       </section>
 
       <section className="work" id="work">
@@ -53,7 +53,7 @@ export default function Home() {
       {settings?.about && (
         <section className="about">
           <p className="about-text reveal">{settings.about}</p>
-          <Link to="/availability" className="btn btn-dark small">Ver disponibilidade</Link>
+          <Link to="/agendar" className="btn btn-dark small">Ver disponibilidade</Link>
         </section>
       )}
     </>

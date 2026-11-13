@@ -28,7 +28,7 @@ export const SUBGROUP_SQL = `
     ) AS cover_filename
   FROM subgroups s`;
 
-export const groupPath = (g) => `/work/${g.id}-${g.slug}`;
+export const groupPath = (g) => `/trabalhos/${g.id}-${g.slug}`;
 
 export const shapeGroup = (g) => ({
   id: g.id,

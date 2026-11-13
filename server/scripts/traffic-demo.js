@@ -18,7 +18,7 @@ const PLACES = [
   ['Brasília', 'DF', 'Brasil', 2], ['Lisboa', '', 'Portugal', 1],
 ];
 const weighted = PLACES.flatMap((p) => Array(p[3]).fill(p));
-const PATHS = ['/', '/', '/', '/availability', '/work/1-casamentos', '/work/2-ensaios'];
+const PATHS = ['/', '/', '/', '/agendar', '/trabalhos/1-casamentos', '/trabalhos/2-ensaios'];
 const REFS = ['', '', '', 'instagram.com', 'google.com', 'l.facebook.com'];
 const insert = db.prepare(`INSERT INTO visits (visitor, month, started_at, last_seen_at, landing_path, pages, device, referrer, location_status, city, region, country)
   VALUES (@visitor, @month, @at, @at, @landing, @pages, @device, @ref, @status, @city, @region, @country)`);

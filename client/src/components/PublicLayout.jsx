@@ -33,13 +33,13 @@ export default function PublicLayout() {
     <>
       <header className={`site-header ${scrolled ? 'scrolled' : ''}`}>
         <nav className="nav-left">
-          <NavLink to="/#work" className={() => (location.pathname.startsWith('/work') ? 'active' : '')}>Trabalhos</NavLink>
+          <NavLink to="/#work" className={() => (location.pathname.startsWith('/trabalhos') ? 'active' : '')}>Trabalhos</NavLink>
         </nav>
         <Link to="/" className={`logo-mark ${isHome && !scrolled ? 'hide' : ''}`} aria-label={settings?.name || 'Início'}>
           {initials(settings?.name)}
         </Link>
         <nav className="nav-right">
-          <NavLink to="/availability" className="nav-cta">Agendar</NavLink>
+          <NavLink to="/agendar" className="nav-cta">Agendar</NavLink>
         </nav>
       </header>
       <main><Outlet /></main>
@@ -53,8 +53,7 @@ export default function PublicLayout() {
         {contact.whatsapp && <a href={contact.whatsapp} target="_blank" rel="noreferrer">WhatsApp ↗</a>}
         {contact.email && <a href={contact.email}>E-mail</a>}
         <Link to="/privacidade">Privacidade</Link>
-        <Link to="/client" className="footer-client">Área do cliente</Link>
-        <Link to="/admin" className="footer-admin">Admin</Link>
+        <Link to="/cliente" className="footer-client">Área do cliente</Link>
       </footer>
       <LocationConsent />
     </>

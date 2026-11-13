@@ -1,6 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+
+// Endereços antigos (em inglês) continuam funcionando: /work/... → /trabalhos/..., etc.
+function Moved({ from, to }) {
+  const { pathname, search, hash } = useLocation();
+  return <Navigate replace to={`${to}${pathname.slice(from.length)}${search}${hash}`} />;
+}
 // Fontes servidas pelo próprio site (sem Google Fonts: mais rápido e sem enviar o IP dos visitantes a terceiros)
 import '@fontsource/cormorant-garamond/latin-300.css';
 import '@fontsource/cormorant-garamond/latin-400.css';
@@ -27,13 +33,16 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Routes>
           <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
-            <Route path="/work/:slug" element={<Group />} />
-            <Route path="/work/:slug/:sub" element={<Group />} />
-            <Route path="/availability" element={<Availability />} />
+            <Route path="/trabalhos/:slug" element={<Group />} />
+            <Route path="/trabalhos/:slug/:sub" element={<Group />} />
+            <Route path="/agendar" element={<Availability />} />
+            <Route path="/work/*" element={<Moved from="/work" to="/trabalhos" />} />
+            <Route path="/availability" element={<Moved from="/availability" to="/agendar" />} />
             <Route path="/privacidade" element={<Privacy />} />
           </Route>
           <Route path="/admin/*" element={<Admin />} />
-          <Route path="/client/*" element={<ClientArea />} />
+          <Route path="/cliente/*" element={<ClientArea />} />
+          <Route path="/client/*" element={<Moved from="/client" to="/cliente" />} />
         </Routes>
       </BrowserRouter>
     </SettingsProvider>

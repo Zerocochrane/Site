@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { api, prettyDate } from '../api.js';
 import Carousel from '../components/Carousel.jsx';
@@ -15,8 +15,8 @@ const pad = (n) => String(n).padStart(2, '0');
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 /**
- * /work/:slug           → the group: its subgroups as cards (or straight to the carousel if it has only one)
- * /work/:slug/:sub      → one subgroup's photos in a carousel
+ * /trabalhos/:slug      → the group: its subgroups as cards (or straight to the carousel if it has only one)
+ * /trabalhos/:slug/:sub → one subgroup's photos in a carousel
  */
 export default function Group() {
   const { slug, sub } = useParams();
@@ -85,6 +85,16 @@ function SubgroupView({ subKey, group, single, nextGroup }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
   const [open, setOpen] = useState(-1);
+  const chipsRef = useRef(null);
+
+  // Phone: the collection chips are one sideways-scrolling row — keep the current one in view
+  useEffect(() => {
+    const row = chipsRef.current;
+    const on = row?.querySelector('.chip.on');
+    if (row && on && row.scrollWidth > row.clientWidth) {
+      row.scrollLeft = on.offsetLeft - row.offsetLeft - (row.clientWidth - on.offsetWidth) / 2;
+    }
+  }, [data?.id]);
 
   // Keep showing the current subgroup until the next one has loaded (no page jump)
   useEffect(() => {
@@ -126,7 +136,7 @@ function SubgroupView({ subKey, group, single, nextGroup }) {
         )}
 
         {data.siblings.length > 1 && (
-          <div className="sub-chips" role="tablist">
+          <div className="sub-chips" role="tablist" ref={chipsRef}>
             {data.siblings.map((s) => (
               <Link key={s.id} to={s.path} state={{ keepScroll: true }} replace className={`chip ${s.id === data.id ? 'on' : ''}`} role="tab" aria-selected={s.id === data.id}>
                 {s.name} <span className="chip-n">{s.photoCount}</span>
@@ -158,7 +168,7 @@ function Footer({ next }) {
       )}
       <div className="group-cta">
         <p>Gostou do que viu?</p>
-        <Link to="/availability" className="btn btn-dark">Agendar uma data →</Link>
+        <Link to="/agendar" className="btn btn-dark">Agendar uma data →</Link>
       </div>
     </section>
   );

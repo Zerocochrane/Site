@@ -1033,3 +1033,41 @@ html { font-variant-numeric: lining-nums; }
 .privacy ul { padding-left: 18px; line-height: 1.7; }
 .privacy li { margin-bottom: 10px; }
 .privacy a { color: var(--accent-ink); }
+
+/* ==== UX Phase 3 ==== */
+/* Home: shorter intro so the first cover shows on the first screen */
+.hero { min-height: min(44vh, 400px); padding: clamp(32px, 5vw, 64px) var(--gutter) clamp(16px, 2.5vw, 28px); gap: 14px; }
+.hero-mark { font-size: clamp(64px, 10vw, 128px); }
+.hero .btn { margin-top: 10px; }
+.work { padding-top: clamp(8px, 2vw, 20px); }
+.section-head { margin-bottom: clamp(20px, 3vw, 36px); }
+@media (max-width: 700px) {
+  .hero { min-height: 0; padding: 36px var(--gutter) 20px; gap: 10px; }
+  .hero-mark { font-size: 64px; }
+  .hero-tag { font-size: 18px; }
+}
+
+/* Collection page: the photo fits the screen; compact header on phones */
+.car-stage { height: clamp(300px, calc(100svh - 364px), 880px); }
+@media (max-width: 700px) {
+  .group-page { padding-top: 16px; }
+  .group-title-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .group-title { font-size: clamp(30px, 9vw, 40px); }
+  .group-meta { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 0; padding-bottom: 0; font-size: 11px; }
+  .group-meta > * + *::before { content: '·'; margin: 0 8px; color: var(--muted); }
+  .group-desc { margin-top: 8px; font-size: 15px; }
+  .sub-chips { flex-wrap: nowrap; overflow-x: auto; margin: 14px calc(-1 * var(--gutter)) 0; padding: 0 var(--gutter) 4px; scrollbar-width: none; scroll-behavior: smooth; }
+  .sub-chips::-webkit-scrollbar { display: none; }
+  .sub-chips .chip { flex: none; }
+  .sub-chips + .carousel { margin-top: 14px; }
+  .car-stage { height: clamp(280px, calc(100svh - 296px), 620px); }
+}
+
+/* Contrast: small text readable (≥ 4.5:1), free days not marked by colour alone */
+.sub-date-side { color: var(--muted); }
+.cal-day.past, .cal-day.closed, .cal-day.booked { color: #8b929a; }
+.cal-day.available:not(.editable)::after { content: ''; position: absolute; left: 50%; bottom: 8px; width: 6px; height: 6px; margin-left: -3px; border-radius: 50%; background: var(--ink); }
+.cal-day.selected.available:not(.editable)::after { background: #fff; }
+.legend .dot.available { position: relative; }
+.legend .dot.available::after { content: ''; position: absolute; inset: 0; margin: auto; width: 4px; height: 4px; border-radius: 50%; background: var(--ink); }
+@media (max-width: 520px) { .cal-day.available:not(.editable)::after { bottom: 5px; width: 5px; height: 5px; margin-left: -2.5px; } }
