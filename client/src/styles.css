@@ -1071,3 +1071,12 @@ html { font-variant-numeric: lining-nums; }
 .legend .dot.available { position: relative; }
 .legend .dot.available::after { content: ''; position: absolute; inset: 0; margin: auto; width: 4px; height: 4px; border-radius: 50%; background: var(--ink); }
 @media (max-width: 520px) { .cal-day.available:not(.editable)::after { bottom: 5px; width: 5px; height: 5px; margin-left: -2.5px; } }
+
+/* ---- Área do cliente: entrar / esqueci minha senha ---- */
+.ca-login label .err { display: block; margin-top: 6px; text-transform: none; letter-spacing: 0; font-size: 13px; }
+.ca-login input[aria-invalid] { border-color: #c0392b; }
+.ca-forgot { align-self: center; font-size: 14px; }
+.ca-forgot-box { border-top: 1px solid var(--line); padding-top: 14px; font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; gap: 10px; }
+.ca-forgot-box p { margin: 0; }
+.ca-forgot-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.ca-forgot-actions .btn { text-decoration: none; }

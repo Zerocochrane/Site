@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { clientApi, clientAuth } from '../api.js';
 import { useSettings } from '../settings.jsx';
 import useImageProtection from '../components/useImageProtection.js';
+import { contactLinks } from '../contact.js';
 
 const fmt = (iso) => new Date(iso).toLocaleString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 function left(iso) {
@@ -49,15 +50,31 @@ export default function ClientArea() {
 }
 
 function ClientLogin({ error, onIn }) {
+  const { settings } = useSettings();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [msg, setMsg] = useState(error);
+  const [missing, setMissing] = useState({}); // campos vazios ao tentar entrar
   const [busy, setBusy] = useState(false);
   const [show, setShow] = useState(false);
+  const [forgot, setForgot] = useState(false);
+  const userRef = useRef(null);
+  const passRef = useRef(null);
   useEffect(() => setMsg(error), [error]);
+
+  const photographer = settings?.name || 'a fotógrafa';
+  const contact = contactLinks(settings, `Olá! Esqueci a senha da minha área do cliente.${username ? ` Meu login é: ${username}` : ''}`);
 
   const submit = async (e) => {
     e.preventDefault();
+    const empty = { username: !username.trim(), password: !password };
+    if (empty.username || empty.password) {
+      setMissing(empty);
+      setMsg('');
+      (empty.username ? userRef : passRef).current?.focus();
+      return;
+    }
+    setMissing({});
     setBusy(true); setMsg('');
     try {
       const { token } = await clientApi('/client/login', { method: 'POST', body: { username, password } });
@@ -73,15 +90,36 @@ function ClientLogin({ error, onIn }) {
       <form onSubmit={submit}>
         <h1>Suas<br />fotos</h1>
         <p className="muted">Entre com os dados que você recebeu por e-mail.</p>
-        <label>Login<input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoCapitalize="none" autoFocus /></label>
+        <label>Login
+          <input ref={userRef} value={username} onChange={(e) => { setUsername(e.target.value); setMissing((m) => ({ ...m, username: false })); }}
+            autoComplete="username" autoCapitalize="none" autoFocus aria-invalid={missing.username || undefined} />
+          {missing.username && <span className="err">Digite o seu login.</span>}
+        </label>
         <label>Senha
           <span className="pw">
-            <input type={show ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+            <input ref={passRef} type={show ? 'text' : 'password'} value={password} onChange={(e) => { setPassword(e.target.value); setMissing((m) => ({ ...m, password: false })); }}
+              autoComplete="current-password" aria-invalid={missing.password || undefined} />
             <button type="button" className="link-btn" onClick={() => setShow((s) => !s)}>{show ? 'Ocultar' : 'Mostrar'}</button>
           </span>
+          {missing.password && <span className="err">Digite a sua senha.</span>}
         </label>
         {msg && <p className="err" role="alert">{msg}</p>}
-        <button className="btn btn-accent wide" disabled={busy || !username || !password}>{busy ? 'Verificando…' : 'Entrar →'}</button>
+        <button className="btn btn-accent wide" disabled={busy}>{busy ? 'Verificando…' : 'Entrar →'}</button>
+        <button type="button" className="link-btn ca-forgot" aria-expanded={forgot} onClick={() => setForgot((f) => !f)}>Esqueci minha senha</button>
+        {forgot && (
+          <div className="ca-forgot-box" role="region" aria-label="Esqueci minha senha">
+            <p>Por segurança, a senha não pode ser recuperada pelo site. Peça uma nova para {photographer}: ela envia uma nova senha para o seu e-mail.</p>
+            <p className="muted small">O seu login está no e-mail “escolha suas fotos” que você recebeu.</p>
+            {contact.any ? (
+              <div className="ca-forgot-actions">
+                {contact.whatsapp && <a className="btn btn-accent small" href={contact.whatsapp} target="_blank" rel="noreferrer">Pedir pelo WhatsApp</a>}
+                {contact.email && <a className="btn btn-line small" href={`${contact.email}?subject=${encodeURIComponent('Nova senha da área do cliente')}`}>Pedir por e-mail</a>}
+              </div>
+            ) : (
+              <p className="muted small">Responda ao e-mail em que você recebeu o acesso.</p>
+            )}
+          </div>
+        )}
       </form>
     </div>
   );
