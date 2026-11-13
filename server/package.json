@@ -10,7 +10,10 @@
     "demo:finance:remove": "node scripts/finance-demo.js --remove",
     "reset:content": "node scripts/reset-content.js",
     "demo:traffic": "node scripts/traffic-demo.js",
-    "demo:traffic:remove": "node scripts/traffic-demo.js --remove"
+    "demo:traffic:remove": "node scripts/traffic-demo.js --remove",
+    "demo:portfolio": "node scripts/demo-portfolio.js",
+    "demo:portfolio:remove": "node scripts/demo-portfolio.js --remove",
+    "clear:data": "node scripts/clear-data.js"
   },
   "dependencies": {
     "archiver": "^7.0.1",

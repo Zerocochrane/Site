@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { api } from '../api.js';
 import { useSettings } from '../settings.jsx';
 import SaveBar from './SaveBar.jsx';
+import ToolsAdmin from './ToolsAdmin.jsx';
 import { useDraft } from './unsaved.jsx';
 
 const toForm = (s) => ({ name: s.name, tagline: s.tagline, about: s.about, instagram: s.instagram });
@@ -30,6 +31,7 @@ export default function SettingsAdmin() {
         <label>Sobre você<textarea rows={4} value={form.about} onChange={set('about')} /></label>
         <label>Instagram <span className="muted">(opcional)</span><input value={form.instagram} onChange={set('instagram')} placeholder="@seunome" /></label>
       </form>
+      <ToolsAdmin />
       <SaveBar dirty={dirty} onSave={save} onDiscard={discard} />
     </section>
   );

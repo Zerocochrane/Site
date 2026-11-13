@@ -31,11 +31,11 @@ export default function Home() {
         {groups === null && <p className="muted" style={{ textAlign: 'center' }}>Carregando…</p>}
         {groups?.length === 0 && <p className="muted" style={{ textAlign: 'center' }}>O portfólio está sendo preparado. Volte em breve.</p>}
 
-        <div className="work-grid">
+        <div className="work-rows">
           {groups?.map((g, i) => (
-            <Link key={g.id} to={g.path} className="work-card reveal" style={{ '--d': `${(i % 3) * 110}ms` }}>
+            <Link key={g.id} to={g.path} className={`work-row reveal ${i % 2 ? 'flip' : ''}`}>
               <div className="work-cover">
-                <img src={g.coverUrl} alt={g.name} loading={i < 3 ? 'eager' : 'lazy'} />
+                <img src={g.coverUrl} alt={g.name} loading={i < 2 ? 'eager' : 'lazy'} />
               </div>
               <div className="work-info">
                 <h2>{g.name}</h2>
@@ -43,6 +43,7 @@ export default function Home() {
                 <span className="work-meta">
                   {g.subgroupCount > 1 ? `${plural(g.subgroupCount, 'coleção', 'coleções')} · ` : ''}{plural(g.photoCount, 'foto', 'fotos')}
                 </span>
+                <span className="work-go">Ver trabalho <i aria-hidden="true">→</i></span>
               </div>
             </Link>
           ))}

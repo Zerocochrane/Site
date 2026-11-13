@@ -17,3 +17,6 @@ logs
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Arquivos de pré-visualização do Claude (não fazem parte do site)
+Claude outputs/

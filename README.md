@@ -86,6 +86,20 @@ Files are stored in `server/private/` (never served directly — only through sh
   Visits older than 24 months are deleted automatically.
 - Demo data: `npm run demo:traffic --prefix server` / `npm run demo:traffic:remove --prefix server`.
 
+## Demo portfolio
+
+`npm run demo:portfolio --prefix server` creates 8–10 groups (Casamentos, Gestantes, Família, Formaturas…), each with
+3–5 subgroups of 8–10 photos. Photos are downloaded from picsum.photos (free Unsplash images, same images every run)
+and go through the normal upload pipeline (watermark + private original). Without internet (or if downloads fail 3 times)
+it switches to generated soft-colour images; force that with `-- --offline`. Takes a few minutes.
+`npm run demo:portfolio:remove --prefix server` deletes only the demo groups and their photos.
+
+## Clear photos and clients
+
+`npm run clear:data --prefix server` shows what would be deleted; `npm run clear:data --prefix server -- --yes` deletes
+**all portfolio groups/subgroups/photos and all clients** (including demo clients, payments, contracts and client-area photos).
+Add `--keep-demo` to keep the demo clients. Settings, categories, calendar days, booking requests and traffic are kept.
+
 ## Starting over (clear content)
 
 `npm run reset:content --prefix server` shows what would be deleted; add ` -- --yes` to delete for real: all portfolio
