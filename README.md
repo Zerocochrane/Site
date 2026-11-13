@@ -94,6 +94,12 @@ and go through the normal upload pipeline (watermark + private original). Withou
 it switches to generated soft-colour images; force that with `-- --offline`. Takes a few minutes.
 `npm run demo:portfolio:remove --prefix server` deletes only the demo groups and their photos.
 
+Photo sources are tried in order: picsum.photos, then loremflickr.com (Creative Commons photos from Flickr, matched to
+each theme). A source that fails is skipped; if none answers, generated images are used. If your server can't reach
+either, upload 10–80 of your own photos in **Configurações → Ferramentas → Minhas fotos para a demonstração** and use
+**Criar com minhas fotos** (`npm run demo:portfolio --prefix server -- --from-uploads`). They are stored in
+`server/private/demo-source/` (never served) and reused across all demo subgroups.
+
 ## Clear photos and clients
 
 `npm run clear:data --prefix server` shows what would be deleted; `npm run clear:data --prefix server -- --yes` deletes

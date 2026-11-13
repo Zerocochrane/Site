@@ -902,7 +902,7 @@ html { font-variant-numeric: lining-nums; }
 /* Configurações → Ferramentas */
 .tools { margin-top: 12px; }
 .tool-panel { margin-bottom: 18px; }
-.tool-row { display: grid; grid-template-columns: 1fr auto; gap: 8px 18px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); }
+.tool-row { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(0, max-content); gap: 8px 18px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); }
 .tool-row:first-of-type { border-top: 0; padding-top: 4px; }
 .tool-row p { margin: 4px 0 0; }
 .tool-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin: 6px 0; }
@@ -1000,3 +1000,4 @@ html { font-variant-numeric: lining-nums; }
   .sub-card { grid-template-columns: 16px minmax(0, 1fr); column-gap: 6px; }
   .sub-date-side { font-size: 11px; }
 }
+.own-photos .job-progress { height: 6px; margin: 10px 0 0; max-width: 360px; }

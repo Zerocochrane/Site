@@ -7,6 +7,9 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { requireAdmin } from '../auth.js';
 import db from '../db.js';
+import fs from 'node:fs';
+import { upload } from '../upload.js';
+import { DEMO_SOURCE_DIR } from '../paths.js';
 
 const router = Router();
 router.use(requireAdmin);
@@ -14,6 +17,7 @@ const SERVER_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 const TOOLS = {
   'portfolio-demo': { script: 'demo-portfolio.js', args: [], label: 'Criar portfólio de demonstração' },
+  'portfolio-demo-uploads': { script: 'demo-portfolio.js', args: ['--from-uploads'], label: 'Criar portfólio de demonstração (minhas fotos)' },
   'portfolio-demo-offline': { script: 'demo-portfolio.js', args: ['--offline'], label: 'Criar portfólio de demonstração (imagens geradas)' },
   'portfolio-demo-remove': { script: 'demo-portfolio.js', args: ['--remove'], label: 'Remover portfólio de demonstração' },
   'finance-demo': { script: 'finance-demo.js', args: [], label: 'Criar clientes de demonstração (Financeiro)' },
@@ -50,8 +54,34 @@ router.get('/', (_req, res) => {
       trafficVisits: db.prepare("SELECT COUNT(*) AS n FROM visits WHERE visitor LIKE 'demo%'").get().n,
     };
   } catch { /* tabelas ainda não criadas */ }
+  demo.sourcePhotos = sourcePhotos().length;
   const last = [...jobs.values()].pop();
   res.json({ confirmWord: CONFIRM_WORD, running: running ? shape(running) : null, last: last ? shape(last) : null, demo });
+});
+
+// ---- Fotos próprias para a demonstração (server/private/demo-source) ----
+const MAX_SOURCE = 80;
+const sourcePhotos = () => (fs.existsSync(DEMO_SOURCE_DIR) ? fs.readdirSync(DEMO_SOURCE_DIR).filter((f) => !f.startsWith('.')) : []);
+
+router.post('/demo-photos', upload.array('photos', MAX_SOURCE), (req, res) => {
+  const files = req.files || [];
+  fs.mkdirSync(DEMO_SOURCE_DIR, { recursive: true });
+  const room = Math.max(0, MAX_SOURCE - sourcePhotos().length);
+  files.forEach((f, i) => {
+    if (i < room) {
+      const ext = (path.extname(f.originalname).toLowerCase().match(/^\.(jpe?g|png|webp|tiff?|avif)$/) || ['.jpg'])[0];
+      const to = path.join(DEMO_SOURCE_DIR, `${Date.now()}-${crypto.randomBytes(4).toString('hex')}${ext}`);
+      try { fs.renameSync(f.path, to); } catch { fs.copyFileSync(f.path, to); fs.rmSync(f.path, { force: true }); }
+    } else fs.rmSync(f.path, { force: true });
+  });
+  const count = sourcePhotos().length;
+  res.json({ count, skipped: Math.max(0, files.length - room), max: MAX_SOURCE });
+});
+
+router.delete('/demo-photos', (_req, res) => {
+  if (running?.tool === 'portfolio-demo-uploads') return res.status(409).json({ error: 'Aguarde a demonstração terminar.' });
+  fs.rmSync(DEMO_SOURCE_DIR, { recursive: true, force: true });
+  res.json({ count: 0 });
 });
 
 router.get('/jobs/:id', (req, res) => {

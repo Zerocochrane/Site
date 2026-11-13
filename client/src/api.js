@@ -80,11 +80,16 @@ export async function uploadClientPhotos(clientId, kind, files, onProgress) {
 
 // Upload with progress (fetch has no upload progress, so XHR here)
 export function uploadPhotos(subgroupId, files, onProgress) {
+  return uploadFiles(`/subgroups/${subgroupId}/photos`, files, onProgress);
+}
+
+/** Envia várias fotos (campo "photos") para uma rota do painel, com progresso. */
+export function uploadFiles(path, files, onProgress) {
   return new Promise((resolve, reject) => {
     const form = new FormData();
     [...files].forEach((f) => form.append('photos', f));
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", `/api/subgroups/${subgroupId}/photos`);
+    xhr.open('POST', `/api${path}`);
     const token = auth.get();
     if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress?.(e.loaded / e.total);

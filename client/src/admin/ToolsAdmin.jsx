@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { api } from '../api.js';
+import { api, uploadFiles } from '../api.js';
 
 const plural = (n, one, many) => `${n.toLocaleString('pt-BR')} ${n === 1 ? one : many}`;
 
@@ -11,6 +11,25 @@ export default function ToolsAdmin() {
   const [keepDemo, setKeepDemo] = useState(false);
   const [confirm, setConfirm] = useState('');
   const logRef = useRef(null);
+  const fileRef = useRef(null);
+  const [sending, setSending] = useState(null); // progresso do envio (0–1) ou null
+
+  const sendOwn = async (files) => {
+    if (!files?.length) return;
+    setError('');
+    setSending(0);
+    try {
+      const r = await uploadFiles('/admin/tools/demo-photos', files, setSending);
+      if (r.skipped) setError(`Limite de ${r.max} fotos: ${r.skipped} não foram guardadas.`);
+      await refresh();
+    } catch (e) { setError(e.message); }
+    setSending(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+  const clearOwn = async () => {
+    setError('');
+    try { await api('/admin/tools/demo-photos', { method: 'DELETE' }); await refresh(); } catch (e) { setError(e.message); }
+  };
 
   const refresh = useCallback(() => api('/admin/tools').then((d) => {
     setInfo(d);
@@ -77,13 +96,27 @@ export default function ToolsAdmin() {
         <div className="tool-row">
           <div>
             <b>Portfólio</b>
-            <p className="muted small">8–10 grupos, 3–5 subgrupos cada, 8–10 fotos por subgrupo (fotos gratuitas do picsum.photos). Leva alguns minutos.
+            <p className="muted small">8–10 grupos, 3–5 subgrupos cada, 8–10 fotos por subgrupo (fotos gratuitas da internet, ou as suas). Leva alguns minutos.
               {info.demo.portfolioGroups > 0 && <> Agora: <b>{plural(info.demo.portfolioGroups, 'grupo', 'grupos')}</b> de demonstração — criar de novo substitui.</>}</p>
           </div>
           <div className="tool-actions">
-            <button className="btn btn-accent small" disabled={busy} onClick={() => run('portfolio-demo')}>Criar</button>
+            <button className="btn btn-accent small" disabled={busy} onClick={() => run('portfolio-demo')} title="Baixa fotos gratuitas da internet (picsum.photos ou loremflickr.com)">Criar</button>
+            <button className="btn btn-line small" disabled={busy || !info.demo.sourcePhotos} onClick={() => run('portfolio-demo-uploads')} title={info.demo.sourcePhotos ? 'Usa as fotos enviadas abaixo' : 'Envie algumas fotos abaixo primeiro'}>Criar com minhas fotos</button>
             <button className="btn btn-line small" disabled={busy} onClick={() => run('portfolio-demo-offline')} title="Não baixa nada: gera imagens em tons suaves">Criar sem internet</button>
             <button className="btn btn-line small" disabled={busy || !info.demo.portfolioGroups} onClick={() => run('portfolio-demo-remove')}>Remover</button>
+          </div>
+        </div>
+        <div className="tool-row own-photos">
+          <div>
+            <b>Minhas fotos para a demonstração</b>
+            <p className="muted small">Se o banco de imagens não responder, envie de 10 a 80 fotos suas: “Criar com minhas fotos” espalha essas fotos (repetidas) por todos os grupos. Elas ficam guardadas só para isso e não aparecem no site.
+              {' '}Agora: <b>{plural(info.demo.sourcePhotos || 0, 'foto', 'fotos')}</b>.</p>
+            {sending !== null && <div className="job-progress"><i style={{ width: `${Math.round(sending * 100)}%` }} /></div>}
+          </div>
+          <div className="tool-actions">
+            <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => sendOwn(e.target.files)} />
+            <button className="btn btn-line small" disabled={sending !== null} onClick={() => fileRef.current?.click()}>{sending !== null ? `Enviando… ${Math.round(sending * 100)}%` : 'Enviar fotos'}</button>
+            <button className="btn btn-line small" disabled={busy || sending !== null || !info.demo.sourcePhotos} onClick={clearOwn}>Limpar</button>
           </div>
         </div>
         <div className="tool-row">
