@@ -11,22 +11,26 @@ SQLite was chosen because the data is small (photos, calendar days, requests) an
 ## What's inside
 
 **Public site**
-- `/` — big name + tagline, the **Work** section: one large cover card per group (Weddings, Portraits…), in the order set in admin, then About.
-- `/work/<id>-<name>` — a group page with its subgroups ("collections") as cards. If a group has only one subgroup, its carousel opens directly.
-- `/work/<id>-<name>/<id>-<name>` — a subgroup's photos as a carousel: arrows, keyboard ← →, swipe on phones, thumbnails, full-screen view, buttons to switch to the group's other subgroups, and a link to the next one.
-- `/availability` — month calendar. Open days are black; booked days are struck through. Clicking an open day shows a short form: **type of event**, **how many hours**, name, email, optional phone and message. The request is saved and emailed to the photographer, with Reply-To set to the customer so she just hits "Reply".
+- `/` — initials + tagline (short, so the first cover shows on the first screen), then the **Trabalhos** section: groups in alternating rows (cover left / text right, then the reverse), in the order set in admin, then About.
+- `/trabalhos/<id>-<name>` — a group page with its subgroups ("collections") as cards, each with its date written sideways beside the cover. If a group has only one subgroup, its carousel opens directly.
+- `/trabalhos/<id>-<name>/<id>-<name>` — a subgroup's photos as a carousel sized to fit the screen: arrows, keyboard ← →, swipe on phones, thumbnails, full-screen view, buttons to switch to the group's other subgroups, and a link to the next one.
+- `/agendar` — month calendar, opening on the first month with a free day (free days are blue with a dot; a month with none says when the next free day is). Picking a day — or **"Ainda não tenho data / só quero um orçamento"** — opens the form: category, duration, name, e-mail, phone, extra fields, "como me conheceu", notes. Errors are named and the page jumps to the first one. The request is saved and e-mailed to the photographer. Limit: 5 sent requests per IP every 10 minutes (form mistakes don't count).
+- `/privacidade` — what the site stores and the visitor's location answer (can be changed).
+- Old English addresses (`/work/…`, `/availability`, `/client`) redirect to the Portuguese ones, so shared links keep working.
+- Footer: WhatsApp / e-mail (from Configurações), Instagram, Privacidade, Área do cliente. The admin is at `/admin` (not linked publicly).
 
 **Admin (`/admin`, password protected)**
 - **Portfolio** — three levels: **groups → subgroups → photos**.
   - *Portfolio*: create groups and drag them into order.
   - *A group*: rename/describe it, create subgroups and drag them into order, and pick the **group cover** from any photo in any of its subgroups (cover picker at the bottom).
-  - *A subgroup*: rename/describe it, upload many photos at once, drag them into carousel order, set **★ Group cover** or **Subgroup cover** on any photo, move a photo to another subgroup (any group), or delete.
+  - *A subgroup*: rename/describe it, set its **date** (shown on the site), upload many photos at once, drag them into carousel order, set **★ Group cover** or **Subgroup cover** on any photo, move a photo to another subgroup (any group), or delete. Moving and deleting a photo show a **Desfazer** (undo) notice for 8 seconds instead of a pop-up; a deleted photo is only really removed when the 8 seconds end or you leave the page.
   - Empty groups and subgroups are completely hidden from visitors (not listed, not counted, and direct links show "not found"). Photos uploaded before subgroups existed were moved into a subgroup named after their group.
 - **Saving:** edits are *not* saved automatically. Names, descriptions, captions, the order of groups/subgroups/photos, cover choices, calendar days and settings are kept as a draft until **Save changes** is clicked in the bar at the bottom of the screen (or Ctrl+S / Cmd+S). **Discard** throws the draft away. Leaving the page, switching tabs, logging out or closing the browser with unsaved changes asks for confirmation first.
   - These happen immediately, because each is a one-off action with its own button: uploading photos, deleting, moving a photo to another subgroup, creating a group/subgroup, and changing a booking request's status.
 - **Calendar** — pick *Available / Booked / Unavailable* and click days. Quick buttons: open all weekends, weekdays, every day, or clear the month.
 - **Requests** — every booking request, with status (new / replied / confirmed / declined) and a "Reply by email" button. Marking a request **confirmed** blocks that day on the calendar.
-- **Settings** — name, tagline, About text, Instagram handle and the list of event types customers can pick.
+- **Settings** — name, tagline, About text, Instagram handle, **public WhatsApp and contact e-mail** (shown in the footer, on Agendar and in the client area's "Esqueci minha senha"), and **Ferramentas** (demo data, clear data, redo watermarks, connection test).
+- Each admin page's explanation is behind **"Como funciona?"** (open on a computer, closed on a phone). On a phone the menu shows all tabs in two rows.
 
 ## Photo protection (portfolio)
 
@@ -36,7 +40,7 @@ SQLite was chosen because the data is small (photos, calendar days, requests) an
 
 ## Client area (photo selection & delivery)
 
-A private area per client at **`/client`** (linked in the site footer as "Client area").
+A private area per client at **`/cliente`** (linked in the site footer as "Área do cliente"). The login page has **"Esqueci minha senha"**: it explains that the photographer sends a new password (Clientes → the client → send access again) and offers WhatsApp / e-mail buttons to ask for it.
 
 **Photographer (Admin → Clients)**
 1. **Create the client:** name, email, login, how many photos they may choose, and how many days they have.
@@ -77,10 +81,11 @@ Files are stored in `server/private/` (never served directly — only through sh
 
 - The public site counts visits (a visit ends after 30 min without activity) and page views; the photographer is not
   counted while logged in to the admin, and automated browsers/bots are ignored.
-- A small banner asks visitors (once per browser) whether the site may use their **approximate location**. If they allow,
+- A small one-line request asks visitors (once per browser) whether the site may use their **approximate location** — never on
+  arrival: only after they open a second page, scroll through the work or stay 40 s, and never on Agendar or the client area. If they allow,
   the browser's position is rounded (~10 km) and turned into a city **on the server, offline** (package `all-the-cities`,
-  GeoNames data — no external service is called). Coordinates and IP addresses are never stored. If they refuse or ignore
-  the banner, the visit shows as "Não permitiu rastreamento".
+  GeoNames data — no external service is called). Coordinates and IP addresses are never stored. If they refuse, ignore
+  or are never asked, the visit shows as "Não permitiu rastreamento". Visitors can change their answer on `/privacidade`.
 - Browsers only allow location on **HTTPS** sites (or localhost) — without HTTPS every visit appears without a city.
 - `/admin/traffic`: visits per month (12-month chart), month picker, totals, visits per location and the latest visits.
   Visits older than 24 months are deleted automatically.
@@ -118,6 +123,13 @@ or `npm run rewatermark --prefix server`. Client-area proofs don't keep an origi
 `npm run reset:content --prefix server` shows what would be deleted; add ` -- --yes` to delete for real: all portfolio
 photos, groups and subgroups, every client created by hand (photos, payment data, contract) and all client-area photos.
 Demo clients (`demo-…`), settings, categories, calendar and booking requests are kept. Stop `npm run dev` first.
+
+## After deploying these changes
+
+1. **Configurações:** fill in **WhatsApp para contato** and **E-mail para contato**, then **Salvar alterações**. Until then the contact buttons stay hidden.
+2. **Configurações → Ferramentas → Refazer marcas d’água** once, if portfolio photos were uploaded on the server before the watermark-font fix.
+3. Give each subgroup its **Data do trabalho** (Portfólio → group → subgroup).
+4. Nothing else: the server installs packages (`npm install`) on deploy.
 
 ## Run it
 
@@ -188,14 +200,15 @@ Any host that runs Node and keeps files on disk works (a VPS, Render/Railway wit
 | POST | `/api/groups/:id/subgroups` | admin | `{name, description}` create a subgroup |
 | PUT | `/api/groups/:id/subgroups/order` | admin | `{ids:[...]}` subgroup order |
 | GET | `/api/subgroups/:id` | – | Subgroup, its photos, its group and sibling subgroups |
-| PATCH | `/api/subgroups/:id` | admin | `{name?, description?, coverPhotoId?}` |
+| PATCH | `/api/subgroups/:id` | admin | `{name?, description?, date?, coverPhotoId?}` |
 | DELETE | `/api/subgroups/:id` | admin | Deletes the subgroup and its photos |
 | POST | `/api/subgroups/:id/photos` | admin | Multipart field `photos` (up to 100 files) |
 | PUT | `/api/subgroups/:id/photos/order` | admin | `{ids:[...]}` photo order |
 | PATCH / DELETE | `/api/photos/:id` | admin | `{title?, subgroupId?}` caption / move — or delete |
 | GET | `/api/availability?from&to` | – | Open and booked days |
+| GET | `/api/availability/next?after=YYYY-MM-DD` | – | First free day (after the minimum notice and after `after`) |
 | PUT | `/api/availability` | admin | `{dates:[...], status:'available'\|'booked'\|'closed'}` |
-| POST | `/api/inquiries` | – | Booking request (rate limited) |
+| POST | `/api/inquiries` | – | Booking request — `eventDate` or `noDate: true` (rate limited: 5 sent / 10 min / IP) |
 | GET / PATCH / DELETE | `/api/inquiries[/:id]` | admin | Manage requests |
 | GET / PUT | `/api/settings` | – / admin | Site texts and event types |
 | GET / POST | `/api/admin/clients` | admin | List / create clients |

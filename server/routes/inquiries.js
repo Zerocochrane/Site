@@ -10,16 +10,25 @@ import { getClient } from '../clientsDb.js';
 const router = Router();
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-// Limite simples em memória: 5 pedidos por IP a cada 10 minutos.
-const hits = new Map();
+// Limite simples em memória, por IP, a cada 10 minutos:
+// - 5 pedidos ENVIADOS (salvos). Tentativas com erro no formulário não contam — quem erra um campo não fica bloqueado;
+// - 40 tentativas no total (proteção contra robôs).
+const WINDOW = 10 * 60 * 1000;
+const sent = new Map();
+const tries = new Map();
+const recent = (map, ip, now) => (map.get(ip) || []).filter((t) => now - t < WINDOW);
 function rateLimit(req, res, next) {
   const now = Date.now();
-  const list = (hits.get(req.ip) || []).filter((t) => now - t < 10 * 60 * 1000);
-  if (list.length >= 5) return res.status(429).json({ error: 'Muitos pedidos. Tente novamente em alguns minutos.' });
-  list.push(now);
-  hits.set(req.ip, list);
+  const t = recent(tries, req.ip, now);
+  if (t.length >= 40 || recent(sent, req.ip, now).length >= 5) {
+    return res.status(429).json({ error: 'Muitos pedidos. Tente novamente em alguns minutos.' });
+  }
+  t.push(now);
+  tries.set(req.ip, t);
+  if (tries.size > 5000) { tries.clear(); sent.clear(); }
   next();
 }
+const countSent = (ip) => { const now = Date.now(); const l = recent(sent, ip, now); l.push(now); sent.set(ip, l); };
 
 export function shapeInquiry(r) {
   const inq = { ...r, extra: JSON.parse(r.extra || '[]') };
@@ -99,6 +108,7 @@ router.post('/', rateLimit, async (req, res) => {
     )
     .run(inq);
 
+  countSent(req.ip);
   const saved = shapeInquiry(db.prepare('SELECT * FROM inquiries WHERE id = ?').get(lastInsertRowid));
   try {
     await sendInquiryEmails(saved);
