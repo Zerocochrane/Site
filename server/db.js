@@ -152,6 +152,8 @@ const defaults = {
   about:
     'Fotografo casamentos, ensaios e eventos com um olhar sincero e espontâneo. Escolha uma data disponível na agenda e me conte sobre o seu dia.',
   instagram: '',
+  whatsapp: '',      // número público para contato (com DDD)
+  contactEmail: '',  // e-mail público para contato
   eventTypes: JSON.stringify(['Casamento', 'Ensaio fotográfico', 'Aniversário', 'Evento corporativo', 'Família', 'Outro']),
 };
 const insertDefault = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');

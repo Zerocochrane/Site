@@ -20,7 +20,8 @@ export function referralText(i) {
 export const durationText = (i) => (i.duration_hours ? `${String(i.duration_hours).replace('.', ',')}h` : '');
 
 export function replyLink(i) {
-  const subject = encodeURIComponent(`${i.event_type} em ${prettyDate(i.event_date)}`);
-  const body = encodeURIComponent(`Olá, ${i.name.split(' ')[0]}!\n\nObrigada pelo contato sobre ${i.event_type.toLowerCase()} em ${prettyDate(i.event_date)}.\n\n`);
+  const when = i.event_date ? ` em ${prettyDate(i.event_date)}` : '';
+  const subject = encodeURIComponent(`${i.event_type}${when}`);
+  const body = encodeURIComponent(`Olá, ${i.name.split(' ')[0]}!\n\nObrigada pelo contato sobre ${i.event_type.toLowerCase()}${when}.\n\n`);
   return `mailto:${i.email}?subject=${subject}&body=${body}`;
 }

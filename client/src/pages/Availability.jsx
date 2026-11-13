@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, todayISO, prettyDate, toISO } from '../api.js';
 import { useSettings } from '../settings.jsx';
 import Calendar from '../components/Calendar.jsx';
+import { contactLinks } from '../contact.js';
 
 const DURATIONS = [1, 2, 3, 4, 5, 6, 8, 10, 12];
 const REFERRALS = ['Instagram', 'Google', 'Indicação', 'Facebook', 'Outro'];
 const KIND_LABEL = { event: 'Evento', photoshoot: 'Ensaio' };
+const NO_DATE = 'sem-data'; // pedido sem data definida ("só quero um orçamento")
+const monthOf = (iso) => { const [y, m] = iso.split('-').map(Number); return new Date(y, m - 1, 1); };
+const monthName = (d) => d.toLocaleDateString('pt-BR', { month: 'long' });
+// Nomes dos campos, para a mensagem "Confira: …"
+const FIELD_NAMES = { categoryId: 'o que agendar', durationHours: 'duração', name: 'nome', email: 'e-mail', phone: 'telefone', referralName: 'quem indicou' };
 
 export default function Availability() {
   const { settings } = useSettings();
@@ -13,7 +19,18 @@ export default function Availability() {
   const [days, setDays] = useState({});
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [nextFree, setNextFree] = useState(undefined); // próximo dia livre depois do mês exibido (undefined = carregando)
+  const touched = useRef(false); // a pessoa já mudou de mês?
+  const panelRef = useRef(null);
   const today = todayISO();
+  const contact = contactLinks(settings, 'Olá! Vi o seu site e gostaria de saber mais.');
+
+  // Abre no primeiro mês que tem dia livre (não necessariamente o mês atual)
+  useEffect(() => {
+    api('/availability/next').then(({ date }) => {
+      if (date && !touched.current) setMonth(monthOf(date));
+    }).catch(() => {});
+  }, []);
   const earliest = settings?.earliestBookableDate && settings.earliestBookableDate > today ? settings.earliestBookableDate : today;
 
   const load = () => {
@@ -24,6 +41,24 @@ export default function Availability() {
       .catch(() => setDays({}));
   };
   useEffect(load, [month]);
+  // Mês sem dias livres: descobre o próximo dia livre depois dele
+  useEffect(() => {
+    setNextFree(undefined);
+    const end = toISO(new Date(month.getFullYear(), month.getMonth() + 1, 0));
+    api(`/availability/next?after=${end}`).then(({ date }) => setNextFree(date)).catch(() => setNextFree(null));
+  }, [month]);
+
+  // Ao escolher um dia (ou "sem data"), leva até o formulário se ele estiver fora da tela (celular)
+  const choose = (value) => {
+    setSelected(value);
+    requestAnimationFrame(() => {
+      const el = panelRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (r.top > window.innerHeight * 0.6 || r.top < 0) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+  const changeMonth = (m) => { touched.current = true; setMonth(m); setSelected((s) => (s === NO_DATE ? s : null)); };
   useEffect(() => { api('/categories').then(setCategories).catch(() => setCategories([])); }, []);
 
   const openCount = useMemo(
@@ -33,7 +68,7 @@ export default function Availability() {
 
   return (
     <section className="availability">
-      <div className="section-label"><span>03</span> Disponibilidade</div>
+      <div className="section-label">Disponibilidade</div>
       <h2 className="page-title">Escolha uma data.<br /><em>Me conte tudo.</em></h2>
 
       <div className="avail-layout">
@@ -41,8 +76,8 @@ export default function Availability() {
           <Calendar
             month={month}
             minMonth={new Date()}
-            onMonthChange={(m) => { setMonth(m); setSelected(null); }}
-            onDayClick={(iso) => setSelected(iso)}
+            onMonthChange={changeMonth}
+            onDayClick={(iso) => choose(iso)}
             dayProps={(iso) => {
               const status = iso < earliest ? 'past' : days[iso] || 'closed';
               return {
@@ -57,19 +92,47 @@ export default function Availability() {
             <span><i className="dot booked" /> Reservado</span>
             <span><i className="dot closed" /> Indisponível</span>
           </div>
-          {earliest > today && (
+          {earliest > today && earliest.slice(0, 7) === toISO(month).slice(0, 7) && (
             <p className="muted small">Agendamentos a partir de {prettyDate(earliest, { day: 'numeric', month: 'long' })}.</p>
           )}
-          {openCount === 0 && <p className="muted small">Nenhuma data disponível neste mês — veja o próximo.</p>}
+          {openCount === 0 && nextFree !== undefined && (
+            <div className="empty-month">
+              {nextFree ? (
+                <>
+                  <p>Nenhuma data livre em {monthName(month)}. Próxima data livre: <b>{prettyDate(nextFree, { day: 'numeric', month: 'long' })}</b>.</p>
+                  <button type="button" className="btn btn-line small" onClick={() => changeMonth(monthOf(nextFree))}>Ver {monthName(monthOf(nextFree))} →</button>
+                </>
+              ) : (
+                <p>Ainda não abri datas depois de {monthName(month)}. Envie um pedido sem data e eu te aviso quando abrir a agenda.</p>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="booking-panel">
+        <div className="booking-panel" ref={panelRef}>
           {selected ? (
-            <BookingForm key={selected} date={selected} categories={categories} onBooked={load} />
+            <BookingForm
+              key={selected}
+              date={selected === NO_DATE ? null : selected}
+              categories={categories}
+              onBooked={load}
+              onPickDate={selected === NO_DATE ? () => setSelected(null) : null}
+            />
           ) : (
             <div className="booking-empty">
               <p className="big-arrow">←</p>
               <p>Escolha um dos dias destacados para enviar um pedido de agendamento.</p>
+              <div className="booking-alt">
+                <button type="button" className="btn btn-line small" onClick={() => choose(NO_DATE)}>Ainda não tenho data / só quero um orçamento</button>
+                {contact.any && (
+                  <p className="muted small">
+                    Prefere conversar?{' '}
+                    {contact.whatsapp && <a href={contact.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>}
+                    {contact.whatsapp && contact.email && ' · '}
+                    {contact.email && <a href={contact.email}>E-mail</a>}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -98,7 +161,8 @@ function ExtraField({ field, value, onChange, error }) {
   );
 }
 
-function BookingForm({ date, categories, onBooked }) {
+function BookingForm({ date, categories, onBooked, onPickDate }) {
+  const formRef = useRef(null);
   const [form, setForm] = useState({
     categoryId: null, durationHours: null, name: '', email: '', phone: '',
     referralSource: '', referralName: '', referralInstagram: '', message: '', website: '',
@@ -120,13 +184,23 @@ function BookingForm({ date, categories, onBooked }) {
     setState('sending');
     setErrors({});
     try {
-      await api('/inquiries', { method: 'POST', body: { ...form, extra, eventDate: date } });
+      await api('/inquiries', { method: 'POST', body: { ...form, extra, ...(date ? { eventDate: date } : { noDate: true }) } });
       setState('done');
     } catch (err) {
-      setErrors(err.details || {});
-      setErrorMsg(err.message);
+      const errs = err.details || {};
+      setErrors(errs);
+      const names = Object.keys(errs).map((k) => FIELD_NAMES[k] || (k.startsWith('extra.') ? category?.fields.find((f) => `extra.${f.id}` === k)?.label?.toLowerCase() : null)).filter(Boolean);
+      setErrorMsg(names.length ? `Confira: ${names.join(', ')}.` : err.message);
       setState('error');
-      if (err.details?.eventDate) onBooked();
+      if (errs.eventDate) onBooked();
+      // leva até o primeiro campo com erro e coloca o cursor nele
+      requestAnimationFrame(() => {
+        const first = formRef.current?.querySelector('.err');
+        const box = first?.closest('label, fieldset');
+        if (!box) return;
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        box.querySelector('input, select, textarea, button')?.focus({ preventScroll: true });
+      });
     }
   };
 
@@ -135,7 +209,7 @@ function BookingForm({ date, categories, onBooked }) {
       <div className="booking-done">
         <h3>Pedido enviado.</h3>
         <p>
-          Obrigada, {form.name.split(' ')[0]}! Enviei uma cópia do seu pedido ({category?.name.toLowerCase()}, {prettyDate(date)}) para{' '}
+          Obrigada, {form.name.split(' ')[0]}! Enviei uma cópia do seu pedido ({category?.name.toLowerCase()}, {date ? prettyDate(date) : 'sem data definida'}) para{' '}
           <strong>{form.email}</strong>. Entrarei em contato em até 2 dias úteis.
         </p>
       </div>
@@ -143,8 +217,17 @@ function BookingForm({ date, categories, onBooked }) {
   }
 
   return (
-    <form className="booking-form" onSubmit={submit} noValidate>
-      <p className="booking-date">{prettyDate(date)}</p>
+    <form className="booking-form" onSubmit={submit} noValidate ref={formRef}>
+      {date ? (
+        <p className="booking-date">{prettyDate(date)}</p>
+      ) : (
+        <div className="booking-date nodate">
+          <p>Sem data definida</p>
+          <span className="muted small">Me conte o que você imagina — respondo com valores e datas possíveis.{' '}
+            {onPickDate && <button type="button" className="link-btn" onClick={onPickDate}>Escolher uma data</button>}
+          </span>
+        </div>
+      )}
 
       <fieldset>
         <legend>O que você quer agendar? *</legend>
@@ -210,7 +293,7 @@ function BookingForm({ date, categories, onBooked }) {
       <label>Observações<textarea rows={3} value={form.message} onChange={set('message')} placeholder="Local, número de convidados, ideias…" /></label>
       <input className="hp" tabIndex={-1} autoComplete="off" value={form.website} onChange={set('website')} aria-hidden="true" />
 
-      {state === 'error' && <p className="err">{errors.eventDate || errorMsg}</p>}
+      {state === 'error' && <p className="err" role="alert">{errors.eventDate || errorMsg}</p>}
       <p className="muted small">* campos obrigatórios</p>
       <button className="btn btn-accent wide" disabled={state === 'sending'}>
         {state === 'sending' ? 'Enviando…' : 'Enviar pedido →'}

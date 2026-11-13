@@ -36,7 +36,7 @@ export default function RequestDetail() {
 
   const rows = [
     ['Categoria', `${inq.event_type} (${(KIND_LABEL[inq.category_kind] || 'Evento').toLowerCase()})`],
-    ['Data', prettyDate(inq.event_date)],
+    ['Data', inq.event_date ? prettyDate(inq.event_date) : 'Sem data definida (pedido de orçamento)'],
     ...(inq.duration_hours ? [['Duração', durationText(inq)]] : []),
     ['Nome', inq.name],
     ['E-mail', <a href={`mailto:${inq.email}`}>{inq.email}</a>],
@@ -65,9 +65,15 @@ export default function RequestDetail() {
       {inq.status === 'confirmed' && (
         <div className="panel accepted-panel">
           <h3>Pedido aceito</h3>
-          <p>O dia {prettyDate(inq.event_date, { day: 'numeric', month: 'long' })} foi marcado como reservado na sua agenda do site.</p>
-          <a className="btn btn-accent" href={inq.calendarUrl} target="_blank" rel="noreferrer">Adicionar ao Google Agenda ↗</a>
-          <p className="muted small">Abre o Google Agenda com o compromisso já preenchido — é só clicar em <b>Salvar</b>.</p>
+          {inq.event_date ? (
+            <>
+              <p>O dia {prettyDate(inq.event_date, { day: 'numeric', month: 'long' })} foi marcado como reservado na sua agenda do site.</p>
+              <a className="btn btn-accent" href={inq.calendarUrl} target="_blank" rel="noreferrer">Adicionar ao Google Agenda ↗</a>
+              <p className="muted small">Abre o Google Agenda com o compromisso já preenchido — é só clicar em <b>Salvar</b>.</p>
+            </>
+          ) : (
+            <p>Este pedido não tinha data. Quando combinarem o dia, coloque a data na página do cliente e marque o dia como reservado no Calendário.</p>
+          )}
           <div className="accepted-client">
             {inq.client ? (
               <>

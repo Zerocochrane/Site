@@ -13,7 +13,7 @@ router.put('/', requireAdmin, (req, res) => {
   const b = req.body || {};
   const set = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
   db.transaction(() => {
-    for (const key of ['name', 'tagline', 'about', 'instagram']) {
+    for (const key of ['name', 'tagline', 'about', 'instagram', 'whatsapp', 'contactEmail']) {
       if (typeof b[key] === 'string') set.run(key, b[key].slice(0, 2000));
     }
     if (b.bookingBufferDays !== undefined) {

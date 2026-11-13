@@ -41,7 +41,7 @@ router.post('/', rateLimit, async (req, res) => {
     name: String(b.name || '').trim().slice(0, 120),
     email: String(b.email || '').trim().slice(0, 200),
     phone: String(b.phone || '').trim().slice(0, 40),
-    event_date: String(b.eventDate || ''),
+    event_date: b.noDate ? '' : String(b.eventDate || ''),
     message: String(b.message || '').trim().slice(0, 3000),
     referral_source: String(b.referralSource || '').trim(),
     referral_name: '',
@@ -81,10 +81,12 @@ router.post('/', rateLimit, async (req, res) => {
     inq.extra = JSON.stringify(extra);
   }
 
-  const earliest = earliestBookableDate();
-  const day = db.prepare('SELECT status FROM availability WHERE date = ?').get(inq.event_date);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(inq.event_date) || inq.event_date < earliest || day?.status !== 'available') {
-    errors.eventDate = 'Essa data não está disponível. Escolha outra.';
+  if (!b.noDate) { // sem data = "ainda não tenho data / só quero um orçamento"
+    const earliest = earliestBookableDate();
+    const day = db.prepare('SELECT status FROM availability WHERE date = ?').get(inq.event_date);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(inq.event_date) || inq.event_date < earliest || day?.status !== 'available') {
+      errors.eventDate = 'Essa data não está disponível. Escolha outra.';
+    }
   }
   if (Object.keys(errors).length) return res.status(400).json({ error: 'Confira o formulário.', errors });
 
@@ -124,12 +126,12 @@ router.patch('/:id', requireAdmin, (req, res) => {
   if (!inq) return res.status(404).json({ error: 'Pedido não encontrado' });
   db.transaction(() => {
     db.prepare('UPDATE inquiries SET status = ? WHERE id = ?').run(status, inq.id);
-    if (status === 'confirmed') {
+    if (status === 'confirmed' && inq.event_date) {
       db.prepare(
         "INSERT INTO availability (date, status) VALUES (?, 'booked') ON CONFLICT(date) DO UPDATE SET status = 'booked'"
       ).run(inq.event_date);
-      clientFromInquiry(inq); // uma vez só: se o cliente já existe, nada muda
     }
+    if (status === 'confirmed') clientFromInquiry(inq); // uma vez só: se o cliente já existe, nada muda
   })();
   res.json(shapeInquiry(db.prepare('SELECT * FROM inquiries WHERE id = ?').get(inq.id)));
 });

@@ -24,6 +24,7 @@ const TOOLS = {
   'finance-demo-remove': { script: 'finance-demo.js', args: ['--remove'], label: 'Remover clientes de demonstração' },
   'traffic-demo': { script: 'traffic-demo.js', args: [], label: 'Criar visitas de demonstração (Tráfego)' },
   'traffic-demo-remove': { script: 'traffic-demo.js', args: ['--remove'], label: 'Remover visitas de demonstração' },
+  'net-check': { script: 'net-check.js', args: [], label: 'Testar conexão com os bancos de imagens' },
   rewatermark: { script: 'rewatermark.js', args: [], label: 'Refazer marcas d’água do portfólio' },
   'clear-preview': { script: 'clear-data.js', args: [], label: 'Ver o que será apagado' },
   'clear-preview-keep': { script: 'clear-data.js', args: ['--keep-demo'], label: 'Ver o que será apagado' },

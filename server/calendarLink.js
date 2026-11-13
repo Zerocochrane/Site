@@ -13,6 +13,7 @@ export function formatExtraValue(f) {
 }
 
 export function googleCalendarUrl(inq) {
+  if (!inq.event_date) return null; // pedido sem data definida
   const extra = Array.isArray(inq.extra) ? inq.extra : [];
   const timeField = extra.find((f) => f.type === 'time' && f.value);
   let dates;

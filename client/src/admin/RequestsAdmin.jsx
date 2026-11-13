@@ -32,10 +32,14 @@ export default function RequestsAdmin() {
       <div className="requests">
         {shown.map((i) => (
           <Link key={i.id} to={`/admin/requests/${i.id}`} className={`request request-link ${i.status}`}>
-            <div className="req-date">
-              <span className="d">{new Date(`${i.event_date}T12:00`).getDate()}</span>
-              <span className="m">{prettyDate(i.event_date, { month: 'short', year: 'numeric' })}</span>
-            </div>
+            {i.event_date ? (
+              <div className="req-date">
+                <span className="d">{new Date(`${i.event_date}T12:00`).getDate()}</span>
+                <span className="m">{prettyDate(i.event_date, { month: 'short', year: 'numeric' })}</span>
+              </div>
+            ) : (
+              <div className="req-date nodate"><span className="d">—</span><span className="m">sem data</span></div>
+            )}
             <div className="req-body">
               <h3>{i.event_type}{durationText(i) && ` · ${durationText(i)}`}</h3>
               <p><strong>{i.name}</strong> — {i.email} · {i.phone}</p>

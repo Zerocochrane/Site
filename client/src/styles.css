@@ -1001,3 +1001,15 @@ html { font-variant-numeric: lining-nums; }
   .sub-date-side { font-size: 11px; }
 }
 .own-photos .job-progress { height: 6px; margin: 10px 0 0; max-width: 360px; }
+
+/* ---- Agendar: mês vazio, pedido sem data ---- */
+.empty-month { margin-top: 14px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--accent-soft); font-size: 14px; }
+.empty-month p { margin: 0 0 10px; }
+.empty-month p:last-child { margin-bottom: 0; }
+.booking-alt { margin-top: 28px; font-size: 14px; font-weight: 400; }
+.booking-alt .btn { white-space: normal; text-align: left; line-height: 1.4; }
+.booking-alt p { margin: 14px 0 0; }
+.booking-alt a { color: var(--accent-ink); }
+.booking-date.nodate p { margin: 0 0 6px; }
+.booking-date.nodate .muted { font-family: var(--sans, inherit); font-size: 14px; display: block; line-height: 1.5; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--accent-ink); text-decoration: underline; cursor: pointer; font: inherit; }

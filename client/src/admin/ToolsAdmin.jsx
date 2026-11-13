@@ -154,6 +154,15 @@ export default function ToolsAdmin() {
             <button className="btn btn-accent small" disabled={busy} onClick={() => run('rewatermark')}>Refazer</button>
           </div>
         </div>
+        <div className="tool-row">
+          <div>
+            <b>Testar conexão</b>
+            <p className="muted small">Verifica se o servidor consegue baixar fotos de picsum.photos e loremflickr.com (e, para comparar, do npm e do Google). O resultado aparece no quadro acima.</p>
+          </div>
+          <div className="tool-actions">
+            <button className="btn btn-line small" disabled={busy} onClick={() => run('net-check')}>Testar</button>
+          </div>
+        </div>
       </div>
 
       <div className="panel tool-panel danger-panel">

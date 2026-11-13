@@ -26,8 +26,10 @@ export async function sendMail({ to, subject, text, html, replyTo }) {
   return { sent: true };
 }
 
-const fmtDate = (iso) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const fmtDate = (iso) => (iso
+  ? new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+  : 'Data a combinar');
+const when = (iso) => (iso ? ` em ${fmtDate(iso)}` : ' (sem data definida)');
 
 export const fmtDateTime = (iso) =>
   new Date(iso).toLocaleString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ_DISPLAY || 'America/Sao_Paulo' });
@@ -86,7 +88,7 @@ export async function sendInquiryEmails(inq) {
   const toClient = sendMail({
     to: inq.email,
     replyTo: process.env.PHOTOGRAPHER_EMAIL || undefined,
-    subject: `Recebemos seu pedido: ${inq.event_type} em ${fmtDate(inq.event_date)}`,
+    subject: `Recebemos seu pedido: ${inq.event_type}${when(inq.event_date)}`,
     text: [
       `Olá, ${firstName}!`,
       '',
@@ -110,7 +112,7 @@ export async function sendInquiryEmails(inq) {
     ? sendMail({
         to: process.env.PHOTOGRAPHER_EMAIL,
         replyTo: `"${inq.name.replace(/"/g, '')}" <${inq.email}>`,
-        subject: `Novo pedido de agendamento: ${inq.event_type} em ${fmtDate(inq.event_date)}`,
+        subject: `Novo pedido de agendamento: ${inq.event_type}${when(inq.event_date)}`,
         text: [
           `${inq.name} quer agendar com você.`,
           '',

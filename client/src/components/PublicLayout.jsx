@@ -2,11 +2,13 @@ import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { initials } from '../initials.js';
 import { useSettings } from '../settings.jsx';
+import { contactLinks } from '../contact.js';
 import useImageProtection from './useImageProtection.js';
 import { useVisitTracking, LocationConsent } from '../tracking.jsx';
 
 export default function PublicLayout() {
   const { settings } = useSettings();
+  const contact = contactLinks(settings);
   const location = useLocation();
   useVisitTracking(location.pathname);
   // Cabeçalho: as iniciais só aparecem no topo depois que a capa da página inicial sai da tela
@@ -48,6 +50,8 @@ export default function PublicLayout() {
             Instagram ↗
           </a>
         )}
+        {contact.whatsapp && <a href={contact.whatsapp} target="_blank" rel="noreferrer">WhatsApp ↗</a>}
+        {contact.email && <a href={contact.email}>E-mail</a>}
         <Link to="/client" className="footer-client">Área do cliente</Link>
         <Link to="/admin" className="footer-admin">Admin</Link>
       </footer>
