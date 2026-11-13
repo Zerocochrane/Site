@@ -52,6 +52,7 @@ export const shapeSubgroup = (s, g) => ({
   slug: s.slug,
   path: `${groupPath(g)}/${s.id}-${s.slug}`,
   description: s.description,
+  date: s.event_date || '',
   coverPhotoId: s.cover_photo_id,
   position: s.position,
   photoCount: s.photo_count,

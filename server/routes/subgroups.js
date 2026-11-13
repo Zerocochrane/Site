@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import path from 'node:path';
-import db, { toSlug } from '../db.js';
+import db, { toSlug, cleanDate } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { upload, photoUrl } from '../upload.js';
 import { makePublicCopy, removePortfolioFiles } from '../portfolioFiles.js';
@@ -30,6 +30,8 @@ router.patch('/:id', requireAdmin, (req, res) => {
   const s = getSubgroupRow(req.params.id);
   if (!s) return res.status(404).json({ error: 'Subgrupo não encontrado' });
   const b = req.body || {};
+  const date = b.date === undefined ? undefined : cleanDate(b.date);
+  if (date === null) return res.status(400).json({ error: 'Data inválida.' });
   if (typeof b.name === 'string') {
     const name = b.name.trim().slice(0, 120);
     if (!name) return res.status(400).json({ error: 'O nome não pode ficar vazio.' });
@@ -37,6 +39,9 @@ router.patch('/:id', requireAdmin, (req, res) => {
   }
   if (typeof b.description === 'string') {
     db.prepare('UPDATE subgroups SET description = ? WHERE id = ?').run(b.description.trim().slice(0, 2000), s.id);
+  }
+  if (date !== undefined) {
+    db.prepare('UPDATE subgroups SET event_date = ? WHERE id = ?').run(date, s.id);
   }
   if (b.coverPhotoId !== undefined) {
     const pid = b.coverPhotoId === null ? null : Number(b.coverPhotoId);

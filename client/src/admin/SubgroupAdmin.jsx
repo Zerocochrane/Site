@@ -11,6 +11,7 @@ import useFlash from './useFlash.js';
 const editable = (s) => ({
   name: s.name,
   description: s.description,
+  date: s.date || '',
   coverPhotoId: s.coverPhotoId,
   groupCoverPhotoId: s.group.coverPhotoId,
   photos: s.photos.map((p) => ({ id: p.id, title: p.title })),
@@ -58,6 +59,7 @@ export default function SubgroupAdmin() {
     const body = {};
     if (draft.name !== saved.name) body.name = draft.name;
     if (draft.description !== saved.description) body.description = draft.description;
+    if (draft.date !== saved.date) body.date = draft.date;
     if (draft.coverPhotoId !== saved.coverPhotoId) body.coverPhotoId = draft.coverPhotoId;
     if (Object.keys(body).length) {
       const s = await api(`/subgroups/${subId}`, { method: 'PATCH', body });
@@ -138,11 +140,18 @@ export default function SubgroupAdmin() {
         <b>{saved.name}</b>
       </nav>
 
-      <DetailsEditor name={draft.name} description={draft.description} onChange={edit} descriptionHint="opcional — local, data, uma frase sobre o trabalho">
+      <DetailsEditor name={draft.name} description={draft.description} onChange={edit} descriptionHint="opcional — local, uma frase sobre o trabalho">
         {msg && <p className="toast">{msg}</p>}
         {saved.photos.length > 0 && <a className="btn btn-line small" href={sub.path} target="_blank" rel="noreferrer">Ver no site ↗</a>}
         <button className="btn btn-line small danger-btn" onClick={deleteSub}>Excluir subgrupo</button>
       </DetailsEditor>
+      <label className="desc-label date-label">
+        Data do trabalho <span className="muted">(aparece no site)</span>
+        <span className="date-field">
+          <input type="date" value={draft.date} max="2100-12-31" onChange={(e) => edit({ date: e.target.value })} />
+          {draft.date && <button type="button" className="btn btn-line small" onClick={() => edit({ date: '' })}>Limpar</button>}
+        </span>
+      </label>
 
       <div
         className={`dropzone ${dragOver ? 'over' : ''}`}

@@ -13,6 +13,7 @@
     "demo:traffic:remove": "node scripts/traffic-demo.js --remove",
     "demo:portfolio": "node scripts/demo-portfolio.js",
     "demo:portfolio:remove": "node scripts/demo-portfolio.js --remove",
+    "rewatermark": "node scripts/rewatermark.js",
     "clear:data": "node scripts/clear-data.js"
   },
   "dependencies": {

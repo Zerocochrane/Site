@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import db, { slugify, toSlug } from '../db.js';
+import db, { slugify, toSlug, cleanDate } from '../db.js';
 import { requireAdmin } from '../auth.js';
 import { removePortfolioFiles } from '../portfolioFiles.js';
 import {
@@ -95,10 +95,12 @@ router.post('/:id/subgroups', requireAdmin, (req, res) => {
   const name = String(req.body?.name || '').trim().slice(0, 120);
   if (!name) return res.status(400).json({ error: 'Dê um nome ao subgrupo.' });
   const description = String(req.body?.description || '').trim().slice(0, 2000);
+  const date = cleanDate(req.body?.date);
+  if (date === null) return res.status(400).json({ error: 'Data inválida.' });
   const pos = db.prepare('SELECT COALESCE(MAX(position), -1) + 1 AS n FROM subgroups WHERE group_id = ?').get(g.id).n;
   const { lastInsertRowid } = db
-    .prepare('INSERT INTO subgroups (group_id, name, slug, description, position) VALUES (?, ?, ?, ?, ?)')
-    .run(g.id, name, toSlug(name), description, pos);
+    .prepare('INSERT INTO subgroups (group_id, name, slug, description, event_date, position) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(g.id, name, toSlug(name), description, date, pos);
   res.status(201).json(shapeSubgroup(getSubgroupRow(lastInsertRowid), g));
 });
 

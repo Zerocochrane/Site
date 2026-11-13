@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import '../fonts.js';
 import sharp from 'sharp';
 import db, { slugify, toSlug } from '../db.js';
 import { PRIVATE_DIR } from '../paths.js';
@@ -20,6 +21,11 @@ const SOURCE = process.env.DEMO_PHOTO_URL || 'https://picsum.photos/seed/{seed}/
 const TMP = path.join(PRIVATE_DIR, 'tmp');
 fs.mkdirSync(TMP, { recursive: true });
 
+// Data aleatória entre jan/2024 e hoje, no formato AAAA-MM-DD
+const demoDate = () => {
+  const start = Date.UTC(2024, 0, 1);
+  return new Date(start + Math.floor(Math.random() * (Date.now() - start))).toISOString().slice(0, 10);
+};
 const readIds = () => { try { return JSON.parse(db.prepare('SELECT value FROM settings WHERE key = ?').get(KEY)?.value || '[]'); } catch { return []; } };
 const saveIds = (ids) => db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(KEY, JSON.stringify(ids));
 
@@ -91,7 +97,20 @@ async function seed() {
   // Fotos: banco de imagens (sementes fixas → sempre as mesmas fotos) ou imagens geradas
   let online = !args.includes('--offline');
   let failures = 0;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  // picsum (Cloudflare) às vezes responde 5xx por alguns segundos: tenta de novo antes de desistir
   async function download(seed, w, h, file) {
+    let err;
+    for (const wait of [0, 2000, 6000]) {
+      if (wait) await sleep(wait);
+      try { return await downloadOnce(seed, w, h, file); } catch (e) {
+        err = e;
+        if (/HTTP 4\d\d/.test(e.message)) break; // erro definitivo, não adianta repetir
+      }
+    }
+    throw err;
+  }
+  async function downloadOnce(seed, w, h, file) {
     const url = SOURCE.replace('{seed}', seed).replace('{w}', w).replace('{h}', h);
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 25000);
@@ -123,8 +142,8 @@ async function seed() {
     saveIds(groupIds); // salva a cada grupo: se o script parar no meio, --remove ainda limpa tudo
 
     for (const [si, sg] of g.subgroups.entries()) {
-      const subId = Number(db.prepare('INSERT INTO subgroups (group_id, name, slug, description, position) VALUES (?, ?, ?, ?, ?)')
-        .run(groupId, sg.name, toSlug(sg.name), `${sg.city}, ${between(2024, 2026)}`, si).lastInsertRowid);
+      const subId = Number(db.prepare('INSERT INTO subgroups (group_id, name, slug, description, event_date, position) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(groupId, sg.name, toSlug(sg.name), sg.city, demoDate(), si).lastInsertRowid);
 
       const jobs = Array.from({ length: sg.photos }, (_, k) => {
         const portrait = rand() < 0.4;
@@ -139,9 +158,9 @@ async function seed() {
             if (online) {
               try { await download(j.seed, j.w, j.h, tmp); failures = 0; }
               catch (e) {
-                if (++failures >= 3 && online) {
+                if (++failures >= 6 && online) {
                   online = false;
-                  console.log(`\n! Não consegui baixar fotos (${e.message}). Continuando com imagens geradas, sem internet.`);
+                  console.log(`\n! O banco de imagens (picsum.photos) não está respondendo (${e.message}). Continuando com imagens geradas. Tente "Criar" de novo mais tarde para ter fotos reais.`);
                 }
                 await generate(j.seed, j.w, j.h, tmp);
               }

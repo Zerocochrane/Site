@@ -3,6 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import './fonts.js';
 import sharp from 'sharp';
 import db, { getSettings } from './db.js';
 import { UPLOAD_DIR, PRIVATE_DIR } from './paths.js';
@@ -43,6 +44,37 @@ export async function makePublicCopy(source, originalName) {
 export function removePortfolioFiles(photo) {
   if (photo.filename) fs.rm(path.join(UPLOAD_DIR, photo.filename), { force: true }, () => {});
   if (photo.orig_file) fs.rm(path.join(ORIGINALS_DIR, photo.orig_file), { force: true }, () => {});
+}
+
+/**
+ * Re-creates every public portfolio copy from its private original (new file name, so
+ * browsers don't keep the old cached copy). Used after fixing the watermark fonts.
+ * `onProgress(done, total)` is called after each photo.
+ */
+export async function rewatermarkPortfolio(onProgress = () => {}) {
+  const rows = db.prepare('SELECT id, filename, orig_file FROM photos WHERE orig_file IS NOT NULL AND orig_file != \'\'').all();
+  const update = db.prepare('UPDATE photos SET filename = ?, orig_file = ?, width = ?, height = ? WHERE id = ?');
+  let done = 0, skipped = 0;
+  for (const r of rows) {
+    const orig = path.join(ORIGINALS_DIR, r.orig_file);
+    if (!fs.existsSync(orig)) { skipped++; onProgress(done + skipped, rows.length); continue; }
+    // makePublicCopy moves its source, so work on a copy and keep the original where it is
+    const tmp = path.join(PRIVATE_DIR, 'tmp', `rewm-${crypto.randomBytes(6).toString('hex')}${path.extname(r.orig_file)}`);
+    try {
+      fs.copyFileSync(orig, tmp);
+      const out = await makePublicCopy(tmp, r.orig_file);
+      fs.rmSync(path.join(ORIGINALS_DIR, out.origFile), { force: true }); // duplicate of the original
+      update.run(out.filename, r.orig_file, out.width, out.height, r.id);
+      if (r.filename && r.filename !== out.filename) fs.rmSync(path.join(UPLOAD_DIR, r.filename), { force: true });
+      done++;
+    } catch (err) {
+      fs.rmSync(tmp, { force: true });
+      skipped++;
+      console.log(`! ${r.filename}: ${err.message}`);
+    }
+    onProgress(done + skipped, rows.length);
+  }
+  return { done, skipped, total: rows.length };
 }
 
 /** One-time conversion of photos uploaded before watermarking existed. Runs in the background. */

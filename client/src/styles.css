@@ -960,3 +960,43 @@ html { font-variant-numeric: lining-nums; }
 @media (prefers-reduced-motion: reduce) {
   .work-row.reveal .work-cover, .work-row.reveal .work-info { opacity: 1; transform: none; transition: none; }
 }
+
+/* ---- Subgroup date ---- */
+.sub-date { display: block; margin-top: 4px; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-ink); }
+.group-meta time { text-transform: none; }
+.date-label { display: block; max-width: 320px; margin-top: 18px; }
+.date-field { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.date-field input { flex: 1; }
+.no-date { color: #b26a4a; }
+
+/* ---- Group covers: hover = slight zoom + soft blur on the inner border ---- */
+.work-row .work-cover { isolation: isolate; }
+.work-row .work-cover::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
+  /* only a frame around the edges is blurred, the middle stays sharp */
+  -webkit-mask: linear-gradient(to right, #000, transparent 9%, transparent 91%, #000),
+                linear-gradient(to bottom, #000, transparent 13%, transparent 87%, #000);
+  mask: linear-gradient(to right, #000, transparent 9%, transparent 91%, #000),
+        linear-gradient(to bottom, #000, transparent 13%, transparent 87%, #000);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .25), inset 0 0 40px rgba(255, 255, 255, .18);
+  opacity: 0; transition: opacity .6s ease;
+}
+.work-row:hover .work-cover::after, .work-row:focus-visible .work-cover::after { opacity: 1; }
+.work-row:hover .work-cover img, .work-row:focus-visible .work-cover img { transform: scale(1.06); }
+@media (hover: none) { .work-row .work-cover::after { display: none; } }
+@media (prefers-reduced-motion: reduce) { .work-row:hover .work-cover img { transform: none; } }
+
+/* ---- Collection cards: date written sideways beside the cover ---- */
+.sub-card { display: grid; grid-template-columns: 22px minmax(0, 1fr); column-gap: 8px; }
+.sub-card > .sub-cover, .sub-card > .sub-caption { grid-column: 2; }
+.sub-card > .sub-cover { grid-row: 1; }
+.sub-date-side {
+  grid-column: 1; grid-row: 1; align-self: start; justify-self: center;
+  writing-mode: vertical-rl; transform: rotate(180deg);   /* reads bottom → top */
+  font-size: 13px; letter-spacing: .06em; color: #9aa1aa; white-space: nowrap; line-height: 1;
+}
+@media (max-width: 700px) {
+  .sub-card { grid-template-columns: 16px minmax(0, 1fr); column-gap: 6px; }
+  .sub-date-side { font-size: 11px; }
+}

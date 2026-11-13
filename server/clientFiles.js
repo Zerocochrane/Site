@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import './fonts.js'; // fonts for the watermark text (minimal servers have none)
 import sharp from 'sharp';
 import multer from 'multer';
 import { PRIVATE_DIR } from './paths.js';

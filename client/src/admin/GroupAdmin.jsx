@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, prettyDate } from '../api.js';
 import { SortableGrid, moveBy, DragGrip } from './Sortable.jsx';
 import DetailsEditor from './DetailsEditor.jsx';
 import SaveBar from './SaveBar.jsx';
@@ -118,7 +118,7 @@ export default function GroupAdmin() {
             </div>
             <div className="group-card-body">
               <h3>{s.name}</h3>
-              <p className="muted small">{s.photoCount} foto{s.photoCount === 1 ? '' : 's'}</p>
+              <p className="muted small">{s.photoCount} foto{s.photoCount === 1 ? '' : 's'} · {s.date ? prettyDate(s.date, { day: 'numeric', month: 'short', year: 'numeric' }) : <span className="no-date">sem data</span>}</p>
             </div>
             <div className="card-actions">
               <button onClick={() => reorder(moveBy(subs, s.id, -1))} disabled={i === 0} title="Mover para antes">←</button>

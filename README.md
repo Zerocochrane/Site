@@ -100,6 +100,13 @@ it switches to generated soft-colour images; force that with `-- --offline`. Tak
 **all portfolio groups/subgroups/photos and all clients** (including demo clients, payments, contracts and client-area photos).
 Add `--keep-demo` to keep the demo clients. Settings, categories, calendar days, booking requests and traffic are kept.
 
+## Watermark fonts
+
+Watermarks are drawn with the DejaVu Sans fonts bundled in `server/fonts/` (`server/fonts.js` points fontconfig at them),
+so they work even on a minimal Ubuntu server with no fonts installed. Photos stamped before this fix (the text shows as
+little boxes) can be redone from their private originals with **Configurações → Ferramentas → Refazer marcas d’água**
+or `npm run rewatermark --prefix server`. Client-area proofs don't keep an original, so re-upload those if needed.
+
 ## Starting over (clear content)
 
 `npm run reset:content --prefix server` shows what would be deleted; add ` -- --yes` to delete for real: all portfolio

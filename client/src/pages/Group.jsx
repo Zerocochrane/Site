@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, prettyDate } from '../api.js';
 import Carousel from '../components/Carousel.jsx';
 import Lightbox from '../components/Lightbox.jsx';
 import Slideshow from '../components/Slideshow.jsx';
 import useReveal from '../components/useReveal.js';
+
+const longDate = (iso) => prettyDate(iso, { day: 'numeric', month: 'long', year: 'numeric' });
+const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+/** '2025-05-15' → '15 mai, 2025' */
+const shortDate = (iso) => { const [y, m, d] = iso.split('-').map(Number); return `${d} ${MONTHS[m - 1]}, ${y}`; };
 
 const pad = (n) => String(n).padStart(2, '0');
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
@@ -59,6 +64,7 @@ export default function Group() {
         <div className="sub-grid">
           {group.subgroups.map((s, i) => (
             <Link key={s.id} to={s.path} className="sub-card reveal" style={{ '--d': `${(i % 3) * 110}ms` }}>
+              {s.date && <time className="sub-date-side" dateTime={s.date} title={longDate(s.date)}>{shortDate(s.date)}</time>}
               <div className="sub-cover">{s.coverUrl && <img src={s.coverUrl} alt={s.name} loading={i < 4 ? 'eager' : 'lazy'} />}</div>
               <div className="sub-caption">
                 <span className="work-num">{pad(i + 1)}</span>
@@ -110,6 +116,7 @@ function SubgroupView({ subKey, group, single, nextGroup }) {
         <div className="group-title-row">
           <h1 className="group-title">{single ? group.name : data.name}</h1>
           <div className="group-meta">
+            {data.date && <time dateTime={data.date}>{longDate(data.date)}</time>}
             {!single && <span>{pad(si + 1)} / {pad(data.siblings.length)}</span>}
             <span>{plural(data.photos.length, 'foto', 'fotos')}</span>
           </div>

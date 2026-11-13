@@ -113,6 +113,22 @@ db.transaction(() => {
   if (!pc.includes('wm')) db.exec('ALTER TABLE photos ADD COLUMN wm INTEGER NOT NULL DEFAULT 0');
 }
 
+// --- Migration: subgroup date (v1.9) -----------------------------------------
+// event_date = 'YYYY-MM-DD' or '' (not set yet).
+{
+  const sc = db.prepare('PRAGMA table_info(subgroups)').all().map((c) => c.name);
+  if (!sc.includes('event_date')) db.exec("ALTER TABLE subgroups ADD COLUMN event_date TEXT NOT NULL DEFAULT ''");
+}
+
+/** Accepts 'YYYY-MM-DD' (a real date) or '' — anything else returns null. */
+export function cleanDate(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const d = new Date(`${s}T12:00:00Z`);
+  return !Number.isNaN(d) && d.toISOString().slice(0, 10) === s ? s : null;
+}
+
 export function toSlug(name) {
   return (
     String(name)

@@ -77,7 +77,7 @@ export default function ToolsAdmin() {
         <div className="tool-row">
           <div>
             <b>Portfólio</b>
-            <p className="muted small">8–10 grupos, 3–5 subgrupos cada, 8–10 fotos por subgrupo (fotos gratuitas do Unsplash). Leva alguns minutos.
+            <p className="muted small">8–10 grupos, 3–5 subgrupos cada, 8–10 fotos por subgrupo (fotos gratuitas do picsum.photos). Leva alguns minutos.
               {info.demo.portfolioGroups > 0 && <> Agora: <b>{plural(info.demo.portfolioGroups, 'grupo', 'grupos')}</b> de demonstração — criar de novo substitui.</>}</p>
           </div>
           <div className="tool-actions">
@@ -106,6 +106,19 @@ export default function ToolsAdmin() {
           <div className="tool-actions">
             <button className="btn btn-accent small" disabled={busy} onClick={() => run('traffic-demo')}>Criar</button>
             <button className="btn btn-line small" disabled={busy || !info.demo.trafficVisits} onClick={() => run('traffic-demo-remove')}>Remover</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel tool-panel">
+        <h3>Manutenção</h3>
+        <div className="tool-row">
+          <div>
+            <b>Refazer marcas d’água</b>
+            <p className="muted small">Gera de novo as cópias públicas das fotos do portfólio a partir dos originais, com a marca d’água atual (use se a marca aparecer como quadradinhos ou depois de mudar o nome). As fotos e a ordem não mudam.</p>
+          </div>
+          <div className="tool-actions">
+            <button className="btn btn-accent small" disabled={busy} onClick={() => run('rewatermark')}>Refazer</button>
           </div>
         </div>
       </div>

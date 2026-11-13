@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import './fonts.js';
 import express from 'express';
 import cors from 'cors';
 import fs from 'node:fs';
