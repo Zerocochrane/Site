@@ -247,8 +247,8 @@ function BookingForm({ date, categories, onBooked, onPickDate }) {
         <fieldset className="estimate">
           <legend>Previsão da data <span className="muted">(opcional)</span></legend>
           <div className="estimate-row">
-            <label>Mês
-              <select value={est.m} onChange={(e) => { setEst((x) => ({ ...x, m: e.target.value })); setErrors((er) => ({ ...er, estimatedMonth: undefined })); }} aria-invalid={errors.estimatedMonth ? true : undefined}>
+            <label><span className="sr-only">Mês</span>
+              <select className={est.m ? '' : 'empty'} value={est.m} onChange={(e) => { setEst((x) => ({ ...x, m: e.target.value })); setErrors((er) => ({ ...er, estimatedMonth: undefined })); }} aria-invalid={errors.estimatedMonth ? true : undefined}>
                 <option value="">Mês…</option>
                 {MONTHS.map((name, k) => {
                   const mm = String(k + 1).padStart(2, '0');
@@ -257,8 +257,8 @@ function BookingForm({ date, categories, onBooked, onPickDate }) {
                 })}
               </select>
             </label>
-            <label>Ano
-              <select value={est.y} onChange={(e) => {
+            <label><span className="sr-only">Ano</span>
+              <select className={est.y ? '' : 'empty'} value={est.y} onChange={(e) => {
                 const y = e.target.value;
                 // um mês que já passou neste ano deixa de valer
                 setEst((x) => ({ y, m: Number(y) === thisYear && x.m && Number(x.m) - 1 < now.getMonth() ? '' : x.m }));
