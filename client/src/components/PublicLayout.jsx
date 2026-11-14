@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { initials } from '../initials.js';
 import { useSettings } from '../settings.jsx';
 import { contactLinks } from '../contact.js';
+import ThemeToggle from './ThemeToggle.jsx';
 import useImageProtection from './useImageProtection.js';
 import { useVisitTracking, LocationConsent } from '../tracking.jsx';
 
@@ -39,6 +40,7 @@ export default function PublicLayout() {
           {initials(settings?.name)}
         </Link>
         <nav className="nav-right">
+          <ThemeToggle />
           <NavLink to="/agendar" className="nav-cta">Agendar</NavLink>
         </nav>
       </header>

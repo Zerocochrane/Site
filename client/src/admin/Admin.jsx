@@ -14,6 +14,7 @@ import TrafficAdmin from './TrafficAdmin.jsx';
 import ClientsAdmin from './ClientsAdmin.jsx';
 import ClientAdmin from './ClientAdmin.jsx';
 import { UnsavedProvider, useUnsaved } from './unsaved.jsx';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 // "Adicionar à tela inicial" abre direto no painel (só nas páginas /admin)
 function useAdminManifest() {
@@ -65,7 +66,10 @@ function AdminShell({ onLogout }) {
           <NavLink to="/admin/traffic">Tráfego</NavLink>
           <NavLink to="/admin/settings"><span className="tab-long">Configurações</span><span className="tab-short" aria-hidden="true">Config.</span></NavLink>
         </nav>
-        <button className="link-btn" onClick={logout}>Sair</button>
+        <span className="admin-header-right">
+          <ThemeToggle />
+          <button className="link-btn" onClick={logout}>Sair</button>
+        </span>
       </header>
       <Routes>
         <Route index element={<Navigate to="portfolio" replace />} />
@@ -103,6 +107,7 @@ function Login({ onIn }) {
   };
   return (
     <div className="login">
+      <ThemeToggle className="login-theme" />
       <form onSubmit={submit}>
         <h1>Acesso<br />do estúdio</h1>
         <label>Senha<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoFocus /></label>

@@ -4,6 +4,7 @@ import { clientApi, clientAuth } from '../api.js';
 import { useSettings } from '../settings.jsx';
 import useImageProtection from '../components/useImageProtection.js';
 import { contactLinks } from '../contact.js';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 const fmt = (iso) => new Date(iso).toLocaleString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 function left(iso) {
@@ -40,7 +41,10 @@ export default function ClientArea() {
       <header className="ca-header">
         <Link to="/" className="logo">{settings?.name || ' '}</Link>
         <span className="ca-label">Área do cliente</span>
-        {state === 'ready' && <button className="link-btn" onClick={logout}>Sair</button>}
+        <span className="ca-header-right">
+          <ThemeToggle />
+          {state === 'ready' && <button className="link-btn" onClick={logout}>Sair</button>}
+        </span>
       </header>
       {state === 'loading' && <p className="ca-wrap muted">Carregando…</p>}
       {state === 'login' && <ClientLogin error={loginError} onIn={() => { setLoginError(''); setState('loading'); }} />}
