@@ -4,6 +4,13 @@ import { siteUrl } from './mail.js';
 const pad = (n) => String(n).padStart(2, '0');
 const compact = (iso) => iso.replace(/-/g, '');
 
+const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+/** '2027-05' → 'maio de 2027' (previsão de data de um pedido sem data). */
+export const monthText = (ym) => {
+  const m = /^(\d{4})-(\d{2})$/.exec(ym || '');
+  return m ? `${MONTHS[Number(m[2]) - 1]} de ${m[1]}` : '';
+};
+
 export function formatExtraValue(f) {
   if (f.value === null || f.value === undefined || f.value === '') return '';
   if (f.type === 'money') return Number(f.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });

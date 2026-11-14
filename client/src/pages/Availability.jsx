@@ -12,7 +12,10 @@ const NO_DATE = 'sem-data'; // pedido sem data definida ("só quero um orçament
 const monthOf = (iso) => { const [y, m] = iso.split('-').map(Number); return new Date(y, m - 1, 1); };
 const monthName = (d) => d.toLocaleDateString('pt-BR', { month: 'long' });
 // Nomes dos campos, para a mensagem "Confira: …"
-const FIELD_NAMES = { categoryId: 'o que agendar', durationHours: 'duração', name: 'nome', email: 'e-mail', phone: 'telefone', referralName: 'quem indicou' };
+const MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+/** '2027-05' → 'maio de 2027' */
+const monthText = (ym) => { const [y, m] = ym.split('-').map(Number); return `${MONTHS[m - 1].toLowerCase()} de ${y}`; };
+const FIELD_NAMES = { estimatedMonth: 'previsão da data', categoryId: 'o que agendar', durationHours: 'duração', name: 'nome', email: 'e-mail', phone: 'telefone', referralName: 'quem indicou' };
 
 export default function Availability() {
   const { settings } = useSettings();
@@ -170,6 +173,11 @@ function BookingForm({ date, categories, onBooked, onPickDate }) {
     referralSource: '', referralName: '', referralInstagram: '', message: '', website: '',
   });
   const [extra, setExtra] = useState({});
+  const [est, setEst] = useState({ m: '', y: '' }); // sem data: previsão (mês/ano), opcional
+  const now = new Date();
+  const thisYear = now.getFullYear();
+  const years = [0, 1, 2, 3].map((k) => thisYear + k);
+  const estimatedMonth = est.m && est.y ? `${est.y}-${est.m}` : '';
   const [errors, setErrors] = useState({});
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const [errorMsg, setErrorMsg] = useState('');
@@ -186,7 +194,12 @@ function BookingForm({ date, categories, onBooked, onPickDate }) {
     setState('sending');
     setErrors({});
     try {
-      await api('/inquiries', { method: 'POST', body: { ...form, extra, ...(date ? { eventDate: date } : { noDate: true }) } });
+      if (!date && Boolean(est.m) !== Boolean(est.y)) {
+        const e = new Error('Confira: previsão da data.');
+        e.details = { estimatedMonth: 'Escolha o mês e o ano (ou deixe os dois em branco).' };
+        throw e;
+      }
+      await api('/inquiries', { method: 'POST', body: { ...form, extra, ...(date ? { eventDate: date } : { noDate: true, estimatedMonth }) } });
       setState('done');
     } catch (err) {
       const errs = err.details || {};
@@ -211,7 +224,7 @@ function BookingForm({ date, categories, onBooked, onPickDate }) {
       <div className="booking-done">
         <h3>Pedido enviado.</h3>
         <p>
-          Obrigada, {form.name.split(' ')[0]}! Enviei uma cópia do seu pedido ({category?.name.toLowerCase()}, {date ? prettyDate(date) : 'sem data definida'}) para{' '}
+          Obrigada, {form.name.split(' ')[0]}! Enviei uma cópia do seu pedido ({category?.name.toLowerCase()}, {date ? prettyDate(date) : estimatedMonth ? `sem data definida — previsão: ${monthText(estimatedMonth)}` : 'sem data definida'}) para{' '}
           <strong>{form.email}</strong>. Entrarei em contato em até 2 dias úteis.
         </p>
       </div>
@@ -229,6 +242,35 @@ function BookingForm({ date, categories, onBooked, onPickDate }) {
             {onPickDate && <button type="button" className="link-btn" onClick={onPickDate}>Escolher uma data</button>}
           </span>
         </div>
+      )}
+      {!date && (
+        <fieldset className="estimate">
+          <legend>Previsão da data <span className="muted">(opcional)</span></legend>
+          <div className="estimate-row">
+            <label>Mês
+              <select value={est.m} onChange={(e) => { setEst((x) => ({ ...x, m: e.target.value })); setErrors((er) => ({ ...er, estimatedMonth: undefined })); }} aria-invalid={errors.estimatedMonth ? true : undefined}>
+                <option value="">Mês…</option>
+                {MONTHS.map((name, k) => {
+                  const mm = String(k + 1).padStart(2, '0');
+                  const past = Number(est.y) === thisYear && k < now.getMonth();
+                  return <option key={mm} value={mm} disabled={past}>{name}</option>;
+                })}
+              </select>
+            </label>
+            <label>Ano
+              <select value={est.y} onChange={(e) => {
+                const y = e.target.value;
+                // um mês que já passou neste ano deixa de valer
+                setEst((x) => ({ y, m: Number(y) === thisYear && x.m && Number(x.m) - 1 < now.getMonth() ? '' : x.m }));
+                setErrors((er) => ({ ...er, estimatedMonth: undefined }));
+              }} aria-invalid={errors.estimatedMonth ? true : undefined}>
+                <option value="">Ano…</option>
+                {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </label>
+          </div>
+          {errors.estimatedMonth && <p className="err">{errors.estimatedMonth}</p>}
+        </fieldset>
       )}
 
       <fieldset>

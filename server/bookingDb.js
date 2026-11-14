@@ -30,6 +30,7 @@ db.exec(`
   add('referral_instagram', "TEXT NOT NULL DEFAULT ''");
   add('client_id', 'INTEGER');                    // cliente criado ao aceitar
   add('extra', "TEXT NOT NULL DEFAULT '[]'");       // respostas dos campos extras (com rótulo e tipo)
+  add('estimated_month', "TEXT NOT NULL DEFAULT ''"); // pedido sem data: previsão 'AAAA-MM' (opcional)
 }
 
 // Antecedência mínima padrão

@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { formatExtraValue } from './calendarLink.js';
+import { formatExtraValue, monthText } from './calendarLink.js';
 
 let transporter = null;
 if (process.env.SMTP_HOST) {
@@ -29,7 +29,7 @@ export async function sendMail({ to, subject, text, html, replyTo }) {
 const fmtDate = (iso) => (iso
   ? new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   : 'Data a combinar');
-const when = (iso) => (iso ? ` em ${fmtDate(iso)}` : ' (sem data definida)');
+const when = (iso, ym) => (iso ? ` em ${fmtDate(iso)}` : ym ? ` (sem data definida — previsão: ${monthText(ym)})` : ' (sem data definida)');
 
 export const fmtDateTime = (iso) =>
   new Date(iso).toLocaleString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ_DISPLAY || 'America/Sao_Paulo' });
@@ -66,7 +66,7 @@ export const REFERRAL_TEXT = (inq) =>
 export function inquiryDetails(inq) {
   return [
     ['Categoria', `${inq.event_type} (${inq.category_kind === 'photoshoot' ? 'ensaio' : 'evento'})`],
-    ['Data', fmtDate(inq.event_date)],
+    ['Data', inq.event_date ? fmtDate(inq.event_date) : inq.estimated_month ? `A definir — previsão: ${monthText(inq.estimated_month)}` : 'A definir'],
     ...(inq.duration_hours ? [['Duração', `${String(inq.duration_hours).replace('.', ',')} hora(s)`]] : []),
     ['Nome', inq.name],
     ['E-mail', inq.email],
@@ -88,7 +88,7 @@ export async function sendInquiryEmails(inq) {
   const toClient = sendMail({
     to: inq.email,
     replyTo: process.env.PHOTOGRAPHER_EMAIL || undefined,
-    subject: `Recebemos seu pedido: ${inq.event_type}${when(inq.event_date)}`,
+    subject: `Recebemos seu pedido: ${inq.event_type}${when(inq.event_date, inq.estimated_month)}`,
     text: [
       `Olá, ${firstName}!`,
       '',
@@ -112,7 +112,7 @@ export async function sendInquiryEmails(inq) {
     ? sendMail({
         to: process.env.PHOTOGRAPHER_EMAIL,
         replyTo: `"${inq.name.replace(/"/g, '')}" <${inq.email}>`,
-        subject: `Novo pedido de agendamento: ${inq.event_type}${when(inq.event_date)}`,
+        subject: `Novo pedido de agendamento: ${inq.event_type}${when(inq.event_date, inq.estimated_month)}`,
         text: [
           `${inq.name} quer agendar com você.`,
           '',

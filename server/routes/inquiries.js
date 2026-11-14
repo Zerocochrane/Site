@@ -60,6 +60,7 @@ router.post('/', rateLimit, async (req, res) => {
     category_kind: category?.kind ?? 'event',
     duration_hours: 0,
     extra: '[]',
+    estimated_month: '',
   };
 
   if (!inq.name) errors.name = 'Informe o seu nome.';
@@ -90,6 +91,16 @@ router.post('/', rateLimit, async (req, res) => {
     inq.extra = JSON.stringify(extra);
   }
 
+  // Pedido sem data: previsão opcional de mês/ano ('AAAA-MM'), a partir do mês atual
+  if (b.noDate && b.estimatedMonth) {
+    const ym = String(b.estimatedMonth);
+    const now = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date()).slice(0, 7);
+    const [y, m] = now.split('-').map(Number);
+    const max = `${y + 5}-${String(m).padStart(2, '0')}`;
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(ym) || ym < now || ym > max) errors.estimatedMonth = 'Escolha um mês a partir deste.';
+    else inq.estimated_month = ym;
+  }
+
   if (!b.noDate) { // sem data = "ainda não tenho data / só quero um orçamento"
     const earliest = earliestBookableDate();
     const day = db.prepare('SELECT status FROM availability WHERE date = ?').get(inq.event_date);
@@ -102,9 +113,9 @@ router.post('/', rateLimit, async (req, res) => {
   const { lastInsertRowid } = db
     .prepare(
       `INSERT INTO inquiries (name, email, phone, event_type, event_date, duration_hours, message,
-         category_id, category_kind, referral_source, referral_name, referral_instagram, extra)
+         category_id, category_kind, referral_source, referral_name, referral_instagram, extra, estimated_month)
        VALUES (@name, @email, @phone, @event_type, @event_date, @duration_hours, @message,
-         @category_id, @category_kind, @referral_source, @referral_name, @referral_instagram, @extra)`
+         @category_id, @category_kind, @referral_source, @referral_name, @referral_instagram, @extra, @estimated_month)`
     )
     .run(inq);
 

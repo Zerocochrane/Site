@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, prettyDate } from '../api.js';
 import WhatsAppButton from './WhatsAppButton.jsx';
-import { STATUS_LABEL, KIND_LABEL, formatExtra, referralText, durationText, replyLink } from './requestUtils.js';
+import { STATUS_LABEL, KIND_LABEL, formatExtra, referralText, durationText, replyLink, estimateText } from './requestUtils.js';
 
 export default function RequestDetail() {
   const { id } = useParams();
@@ -36,7 +36,7 @@ export default function RequestDetail() {
 
   const rows = [
     ['Categoria', `${inq.event_type} (${(KIND_LABEL[inq.category_kind] || 'Evento').toLowerCase()})`],
-    ['Data', inq.event_date ? prettyDate(inq.event_date) : 'Sem data definida (pedido de orçamento)'],
+    ['Data', inq.event_date ? prettyDate(inq.event_date) : estimateText(inq) ? `Sem data definida — previsão: ${estimateText(inq)}` : 'Sem data definida (pedido de orçamento)'],
     ...(inq.duration_hours ? [['Duração', durationText(inq)]] : []),
     ['Nome', inq.name],
     ['E-mail', <a href={`mailto:${inq.email}`}>{inq.email}</a>],

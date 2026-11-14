@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, prettyDate } from '../api.js';
-import { STATUS_LABEL, KIND_LABEL, durationText } from './requestUtils.js';
+import { STATUS_LABEL, KIND_LABEL, durationText, estimateText } from './requestUtils.js';
 import Help from './Help.jsx';
 
 const FILTER_LABEL = { open: 'Em aberto', confirmed: 'Aceitos', declined: 'Recusados', all: 'Todos' };
@@ -39,7 +39,10 @@ export default function RequestsAdmin() {
                 <span className="m">{prettyDate(i.event_date, { month: 'short', year: 'numeric' })}</span>
               </div>
             ) : (
-              <div className="req-date nodate"><span className="d">—</span><span className="m">sem data</span></div>
+              <div className="req-date nodate" title={estimateText(i) ? `Sem data — previsão: ${estimateText(i)}` : 'Sem data'}>
+                <span className="d">—</span>
+                <span className="m">{estimateText(i) ? `prev. ${estimateText(i).replace(' de ', ' ').slice(0, 3)} ${i.estimated_month.slice(0, 4)}` : 'sem data'}</span>
+              </div>
             )}
             <div className="req-body">
               <h3>{i.event_type}{durationText(i) && ` · ${durationText(i)}`}</h3>

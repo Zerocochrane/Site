@@ -1219,3 +1219,10 @@ html[data-theme="dark"] .chart-tip .muted { color: #5b626b; }
 @media (max-width: 700px) {
   .admin-header-right { grid-column: 2; grid-row: 1; gap: 10px; }
 }
+
+/* ---- Pedido sem data: previsão (mês/ano) ---- */
+.booking-form .estimate { margin-bottom: 20px; }
+.estimate-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 420px; }
+.estimate-row label { margin-bottom: 0; }
+.estimate .err { margin-top: 8px; }
+.estimate select[aria-invalid] { border-color: var(--danger); }

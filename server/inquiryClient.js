@@ -1,7 +1,7 @@
 // Pedido aceito → cliente. Copia nome, contato, evento, data, duração e o resto do pedido (em "Anotações").
 import db, { getClient } from './clientsDb.js';
 import './bookingDb.js'; // colunas de inquiries (inclui client_id)
-import { formatExtraValue } from './calendarLink.js';
+import { formatExtraValue, monthText } from './calendarLink.js';
 import { REFERRAL_TEXT } from './mail.js';
 
 export const DEFAULT_SELECTION_LIMIT = 30;
@@ -26,6 +26,7 @@ export function inquiryNotes(inq) {
   const extra = JSON.parse(inq.extra || '[]');
   const lines = [
     `Pedido de agendamento nº ${inq.id} (${new Date(`${inq.created_at}Z`).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })})`,
+    !inq.event_date && inq.estimated_month ? `Previsão da data: ${monthText(inq.estimated_month)}` : '',
     ...extra.map((f) => `${f.label}: ${formatExtraValue(f)}`),
     inq.referral_source ? `Como conheceu: ${REFERRAL_TEXT(inq)}` : '',
     inq.message ? `Observações: ${inq.message}` : '',
