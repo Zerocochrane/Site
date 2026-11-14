@@ -101,7 +101,7 @@ export default function ToolsAdmin() {
               {info.demo.portfolioGroups > 0 && <> Agora: <b>{plural(info.demo.portfolioGroups, 'grupo', 'grupos')}</b> de demonstração — criar de novo substitui.</>}</p>
           </div>
           <div className="tool-actions">
-            <button className="btn btn-accent small" disabled={busy} onClick={() => run('portfolio-demo')} title="Baixa fotos gratuitas da internet (picsum.photos ou loremflickr.com)">Criar</button>
+            <button className="btn btn-accent small" disabled={busy} onClick={() => run('portfolio-demo')} title="Baixa fotos gratuitas da internet (Unsplash; reservas: picsum.photos e loremflickr.com)">Criar</button>
             <button className="btn btn-line small" disabled={busy || !info.demo.sourcePhotos} onClick={() => run('portfolio-demo-uploads')} title={info.demo.sourcePhotos ? 'Usa as fotos enviadas abaixo' : 'Envie algumas fotos abaixo primeiro'}>Criar com minhas fotos</button>
             <button className="btn btn-line small" disabled={busy} onClick={() => run('portfolio-demo-offline')} title="Não baixa nada: gera imagens em tons suaves">Criar sem internet</button>
             <button className="btn btn-line small" disabled={busy || !info.demo.portfolioGroups} onClick={() => run('portfolio-demo-remove')}>Remover</button>
@@ -158,7 +158,7 @@ export default function ToolsAdmin() {
         <div className="tool-row">
           <div>
             <b>Testar conexão</b>
-            <p className="muted small">Verifica se o servidor consegue baixar fotos de picsum.photos e loremflickr.com (e, para comparar, do npm e do Google). O resultado aparece no quadro acima.</p>
+            <p className="muted small">Verifica se o servidor consegue baixar fotos do Unsplash, picsum.photos e loremflickr.com (e, para comparar, do npm e do Google). O resultado aparece no quadro acima.</p>
           </div>
           <div className="tool-actions">
             <button className="btn btn-line small" disabled={busy} onClick={() => run('net-check')}>Testar</button>

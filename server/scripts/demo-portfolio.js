@@ -1,6 +1,6 @@
 // Portfólio de demonstração: 8–10 grupos, cada um com 3–5 subgrupos de 8–10 fotos.
 //
-//   npm run demo:portfolio            → cria (baixa fotos de banco de imagens gratuito — picsum.photos / Unsplash)
+//   npm run demo:portfolio            → cria (baixa fotos gratuitas: Unsplash por tema; reservas picsum.photos / loremflickr)
 //   npm run demo:portfolio -- --offline   → cria sem internet (imagens geradas, em tons suaves)
 //   npm run demo:portfolio -- --from-uploads → usa as fotos enviadas em Ferramentas (server/private/demo-source)
 //   npm run demo:portfolio:remove     → apaga só os grupos de demonstração e as fotos deles
@@ -15,14 +15,17 @@ import sharp from 'sharp';
 import db, { slugify, toSlug } from '../db.js';
 import { PRIVATE_DIR, DEMO_SOURCE_DIR as SOURCE_DIR } from '../paths.js';
 import { makePublicCopy, removePortfolioFiles } from '../portfolioFiles.js';
+import { unsplashList, unsplashUrl } from './demo-photos.js';
 
 const args = process.argv.slice(2);
 const KEY = 'demoGroupIds';
 // Bancos de imagens, em ordem: se um falhar várias vezes seguidas, passa para o próximo.
 // {seed} texto fixo, {w}/{h} tamanho, {tag} tema em inglês, {lock} número fixo
+// Unsplash vem primeiro: fotos escolhidas por tema (demo-photos.js) e uma CDN que aceita servidores em nuvem.
 const SOURCES = process.env.DEMO_PHOTO_URL
   ? [{ name: 'DEMO_PHOTO_URL', url: process.env.DEMO_PHOTO_URL }]
   : [
+      { name: 'Unsplash', unsplash: true },
       { name: 'picsum.photos', url: 'https://picsum.photos/seed/{seed}/{w}/{h}.jpg' },
       { name: 'loremflickr.com', url: 'https://loremflickr.com/{w}/{h}/{tag}?lock={lock}' },
     ];
@@ -134,10 +137,29 @@ async function seed() {
     }
     throw err;
   }
+  // Unsplash: percorre a lista do tema em ordem, para não repetir foto até a lista acabar
+  const nextIndex = {};
   async function downloadOnce(seed, w, h, file, tag) {
+    if (SOURCES[src].unsplash) {
+      const list = unsplashList(tag);
+      // uma foto que saiu do ar (404) não derruba o banco: tenta as próximas da lista
+      let err;
+      for (let n = 0; n < 3; n++) {
+        const key = (tag || '').split(',')[0];
+        const i = (nextIndex[key] = (nextIndex[key] ?? -1) + 1);
+        try { return await fetchTo(unsplashUrl(list[i % list.length], w, h), file); } catch (e) {
+          err = e;
+          if (!/HTTP 404/.test(e.message)) throw e;
+        }
+      }
+      throw err;
+    }
     const lock = [...seed].reduce((n, c) => (n * 31 + c.charCodeAt(0)) % 100000, 7);
     const url = SOURCES[src].url.replace('{seed}', seed).replace('{w}', w).replace('{h}', h)
       .replace('{tag}', tag || 'people').replace('{lock}', lock);
+    return fetchTo(url, file);
+  }
+  async function fetchTo(url, file) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 25000);
     try {

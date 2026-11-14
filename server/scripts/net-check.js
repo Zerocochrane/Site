@@ -5,8 +5,9 @@
 import dns from 'node:dns/promises';
 
 const TARGETS = [
-  { label: 'picsum.photos (banco 1)', url: 'https://picsum.photos/seed/teste/400/300.jpg' },
-  { label: 'loremflickr.com (banco 2)', url: 'https://loremflickr.com/400/300/wedding?lock=1' },
+  { label: 'Unsplash (banco 1)', url: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=300&fit=crop&q=80&fm=jpg' },
+  { label: 'picsum.photos (banco 2)', url: 'https://picsum.photos/seed/teste/400/300.jpg' },
+  { label: 'loremflickr.com (banco 3)', url: 'https://loremflickr.com/400/300/wedding?lock=1' },
   { label: 'registry.npmjs.org (controle)', url: 'https://registry.npmjs.org/' },
   { label: 'google.com (controle)', url: 'https://www.google.com/generate_204' },
 ];
@@ -60,8 +61,8 @@ async function check({ label, url }) {
 
 const results = [];
 for (const t of TARGETS) results.push(await check(t));
-const [p, l, npm, g] = results;
+const [u, p, l, npm, g] = results;
 console.log('\nResumo:');
 if (!npm && !g) console.log('  O servidor não consegue acessar a internet por HTTPS. Verifique as regras de saída (egress) da rede na Oracle Cloud.');
-else if (!p && !l) console.log('  A internet funciona, mas os dois bancos de imagens falharam a partir deste servidor. Use "Criar com minhas fotos".');
-else console.log(`  Bancos de imagens funcionando: ${[p && 'picsum.photos', l && 'loremflickr.com'].filter(Boolean).join(', ')}.`);
+else if (!u && !p && !l) console.log('  A internet funciona, mas nenhum banco de imagens respondeu a partir deste servidor. Use "Criar com minhas fotos".');
+else console.log(`  Bancos de imagens funcionando: ${[u && 'Unsplash', p && 'picsum.photos', l && 'loremflickr.com'].filter(Boolean).join(', ')}.${u ? ' A demonstração vai usar o Unsplash.' : ''}`);
