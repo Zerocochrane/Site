@@ -14,6 +14,7 @@
   --soft: #f1f4f7;         /* fundo de imagens */
   --stage: #f4f6f8;        /* fundo do carrossel */
   --danger: #b3261e;       /* erros, excluir */
+  --ok: #1f6b4a;           /* confirmação (assinatura válida) */
   --surface: #ffffff;      /* cartões, painéis, formulários */
   --on-ink: #ffffff;       /* texto sobre fundo --ink (botões escuros) */
   --bar: #2a2f36;          /* barra do painel */
@@ -1153,6 +1154,7 @@ html[data-theme="dark"] {
   --soft: #1e2126;
   --stage: #15181b;
   --danger: #f08a82;
+  --ok: #7cc9a3;
   --shadow: 0 14px 40px rgba(0, 0, 0, .45);
 }
 html[data-theme="dark"] .ca-heart { color: #48698c; }                 /* coração sobre o círculo branco da foto */
@@ -1233,3 +1235,65 @@ html[data-theme="dark"] .chart-tip .muted { color: #5b626b; }
 .estimate .err { margin-top: 6px; }
 .estimate select[aria-invalid] { border-color: var(--danger); }
 @media (max-width: 700px) { .estimate-row select { padding: 5px 28px 5px 10px; min-width: 120px; } }
+
+
+/* ==== Contrato: assinatura eletrônica e códigos ==== */
+.stage.attention { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent-ink); }
+.stage.signed { color: var(--ok); }
+.hash { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; margin: 10px 0 14px; }
+.hash-label { grid-column: 1 / -1; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.hash code { font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 13px; line-height: 1.5; display: flex; flex-wrap: wrap; gap: 0 .6em; word-break: break-all; color: var(--ink); }
+.hash .link-btn { justify-self: end; }
+.sig-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 14px 0; }
+.sig-card { border: 1px solid var(--frame); border-radius: var(--radius-sm); background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sig-card.pending { border-style: dashed; }
+.sig-card .muted { margin: 4px 0 0; }
+.sig-role { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.sig-name { font-family: var(--display); font-size: 22px; font-weight: 500; }
+.sig-when { font-size: 14px; }
+.sig-card .hash { margin: 8px 0 0; }
+.sig-card .hash code { font-size: 12px; color: var(--ok); }
+.hash-check { margin: 6px 0 4px; }
+.hash-check-row { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+.hash-check-row input { flex: 1 1 260px; margin-top: 0; font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 14px; }
+.hash-check-row .btn { flex: 0 0 auto; }
+.hash-result { margin-top: 12px; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid; display: flex; flex-direction: column; gap: 4px; font-size: 14px; overflow-wrap: anywhere; }
+.hash-result.ok { border-color: var(--ok); }
+.hash-result.ok > b { color: var(--ok); }
+.hash-result.bad { border-color: var(--danger); }
+.hash-result.bad > b { color: var(--danger); }
+.hash-panel { margin-bottom: 22px; }
+.hash-panel-toggle { all: unset; cursor: pointer; display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.hash-panel-toggle:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 4px; }
+.hash-panel-toggle h3 { margin: 0; }
+.hash-panel-toggle > span { font-size: 22px; color: var(--muted); }
+.hash-panel .hash-check { margin-top: 14px; }
+.sign-send { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.sign-send label { font-size: 13px; margin: 0; }
+.days-input { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 14px; text-transform: none; letter-spacing: 0; }
+.days-input input, .extend-row input { width: 76px; }
+.days-input input { margin-top: 0; }
+.sign-wait { border-top: 1px solid var(--line); margin-top: 10px; padding-top: 12px; }
+.sign-mine { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 4px; }
+.sign-mine h4 { margin: 0 0 6px; font-size: 15px; }
+.sign-mine .btn { margin: 4px 0 8px; }
+/* área do cliente */
+.contract-doc { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border: 1px solid var(--frame); background: var(--surface); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 18px; }
+.contract-doc > div { display: flex; flex-direction: column; gap: 2px; flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
+.contract-doc-icon { flex: none; width: 42px; height: 52px; display: grid; place-items: center; border: 1px solid var(--frame); border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em; color: var(--accent-ink); background: var(--accent-soft); }
+.sign-form { max-width: 560px; display: flex; flex-direction: column; gap: 10px; }
+.sign-form label:not(.check) { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
+.sign-form .check { font-size: 15px; align-items: flex-start; }
+.sign-form .check input { margin-top: 3px; }
+.sign-form .btn { align-self: flex-start; margin-top: 6px; }
+.sign-form .err { margin: -4px 0 0; }
+.contract-toggle { all: unset; cursor: pointer; display: flex; gap: 10px; align-items: baseline; font-family: var(--display); font-size: clamp(19px, 3vw, 27px); }
+.contract-toggle:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 4px; }
+.contract-toggle > span { color: var(--muted); }
+.contract-done { border-top: 1px solid var(--line); padding-top: 24px; }
+.ca-h3 { font-family: var(--display); font-weight: 400; font-size: 21px; margin: 26px 0 6px; }
+@media (max-width: 700px) {
+  .hash code { font-size: 12px; }
+  .sig-cards { grid-template-columns: 1fr; }
+  .contract-doc .btn { width: 100%; }
+}

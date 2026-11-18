@@ -112,11 +112,11 @@ export const prettyDate = (iso, opts = { weekday: 'long', day: 'numeric', month:
   new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR', opts);
 
 /** Baixa um arquivo protegido do painel (envia o token) e salva com o nome vindo do servidor. */
-export async function downloadFile(path, fallbackName = 'arquivo') {
-  const res = await fetch(`/api${path}`, { headers: { Authorization: `Bearer ${auth.get()}` } });
+export async function downloadFile(path, fallbackName = 'arquivo', tokens = auth) {
+  const res = await fetch(`/api${path}`, { headers: { Authorization: `Bearer ${tokens.get()}` } });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new ApiError(data.error || 'Não foi possível baixar o arquivo.', res.status);
+    throw new ApiError(data.error || 'Não foi possível baixar o arquivo.', res.status, undefined, data.code);
   }
   const cd = res.headers.get('Content-Disposition') || '';
   const m = cd.match(/filename\*=UTF-8''([^;]+)/i) || cd.match(/filename="?([^";]+)"?/i);

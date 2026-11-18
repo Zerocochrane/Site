@@ -66,7 +66,11 @@ export function isExpired(c) {
   if (c.archived_at) return true; // fotos já excluídas: login bloqueado para sempre
   if (c.delete_after) return Date.parse(c.delete_after) <= Date.now();
   if (c.confirmed_at) return false;
-  return !c.expires_at || Date.parse(c.expires_at) <= Date.now();
+  if (c.access_sent_at) return !c.expires_at || Date.parse(c.expires_at) <= Date.now(); // escolhendo as fotos
+  // Contrato: até o cliente assinar vale o prazo para assinar; depois o prazo para (espera as fotos).
+  if (c.client_signed_at) return false;
+  if (c.contract_sent_at) return !c.sign_deadline || Date.parse(c.sign_deadline) <= Date.now();
+  return true;
 }
 
 export const getClient = (id) => db.prepare('SELECT * FROM clients WHERE id = ?').get(id);
@@ -86,8 +90,11 @@ export function stage(c) {
   if (c.archived_at) return 'archived';
   if (c.done_notified_at) return 'delivered';
   if (c.confirmed_at) return 'confirmed';
-  if (!c.access_sent_at) return 'draft';
-  return isExpired(c) ? 'expired' : 'selecting';
+  if (c.access_sent_at) return isExpired(c) ? 'expired' : 'selecting';
+  if (c.photographer_signed_at) return 'signed';          // contrato completo, aguardando as fotos
+  if (c.client_signed_at) return 'to-sign';                // falta a assinatura da fotógrafa
+  if (c.contract_sent_at) return isExpired(c) ? 'sign-expired' : 'signing';
+  return 'draft';
 }
 
 export default db;

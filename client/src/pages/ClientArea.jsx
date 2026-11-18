@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { clientApi, clientAuth } from '../api.js';
+import { clientApi, clientAuth, downloadFile } from '../api.js';
+import { Hash, SignatureCard, HashValidator } from '../components/ContractBits.jsx';
 import { useSettings } from '../settings.jsx';
 import useImageProtection from '../components/useImageProtection.js';
 import { contactLinks } from '../contact.js';
@@ -35,6 +36,7 @@ export default function ClientArea() {
   useImageProtection(state === 'ready');
 
   const logout = () => { clientAuth.clear(); setMe(null); setState('login'); };
+  const expire = (msg) => { clientAuth.clear(); setLoginError(msg); setState('login'); };
 
   return (
     <div className="ca">
@@ -48,7 +50,9 @@ export default function ClientArea() {
       </header>
       {state === 'loading' && <p className="ca-wrap muted">Carregando…</p>}
       {state === 'login' && <ClientLogin error={loginError} onIn={() => { setLoginError(''); setState('loading'); }} />}
-      {state === 'ready' && me && <Gallery me={me} setMe={setMe} onExpired={(msg) => { clientAuth.clear(); setLoginError(msg); setState('login'); }} />}
+      {state === 'ready' && me && (me.photosReleased
+        ? <Gallery me={me} setMe={setMe} onExpired={expire} />
+        : <ContractHome me={me} setMe={setMe} onExpired={expire} />)}
     </div>
   );
 }
@@ -93,7 +97,7 @@ function ClientLogin({ error, onIn }) {
     <div className="ca-login">
       <form onSubmit={submit}>
         <h1>Suas<br />fotos</h1>
-        <p className="muted">Entre com os dados que você recebeu por e-mail.</p>
+        <p className="muted">Entre com o login e a senha que você recebeu por e-mail.</p>
         <label>Login
           <input ref={userRef} value={username} onChange={(e) => { setUsername(e.target.value); setMissing((m) => ({ ...m, username: false })); }}
             autoComplete="username" autoCapitalize="none" autoFocus aria-invalid={missing.username || undefined} />
@@ -113,7 +117,7 @@ function ClientLogin({ error, onIn }) {
         {forgot && (
           <div className="ca-forgot-box" role="region" aria-label="Esqueci minha senha">
             <p>Por segurança, a senha não pode ser recuperada pelo site. Peça uma nova para {photographer}: ela envia uma nova senha para o seu e-mail.</p>
-            <p className="muted small">O seu login está no e-mail “escolha suas fotos” que você recebeu.</p>
+            <p className="muted small">O seu login está no e-mail em que você recebeu o contrato para assinar.</p>
             {contact.any ? (
               <div className="ca-forgot-actions">
                 {contact.whatsapp && <a className="btn btn-accent small" href={contact.whatsapp} target="_blank" rel="noreferrer">Pedir pelo WhatsApp</a>}
@@ -270,6 +274,8 @@ function Gallery({ me, setMe, onExpired }) {
         />
       )}
 
+      {me.contract && <ContractSection me={me} onExpired={onExpired} />}
+
       {confirming && (
         <div className="ca-modal" role="dialog" aria-modal="true">
           <div className="ca-modal-box">
@@ -284,6 +290,155 @@ function Gallery({ me, setMe, onExpired }) {
         </div>
       )}
     </div>
+  );
+}
+
+const fmtShort = (iso) => new Date(iso).toLocaleString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+/** Antes das fotos: assinar o contrato, ou esperar a fotógrafa assinar / enviar as fotos. */
+function ContractHome({ me, setMe, onExpired }) {
+  const k = me.contract;
+  const first = me.name.split(' ')[0];
+  if (!k) {
+    return (
+      <div className="ca-wrap">
+        <section className="ca-intro">
+          <p className="eyebrow">Olá, {first}</p>
+          <h1 className="ca-title">Suas fotos<br />estão a caminho</h1>
+          <p className="ca-lead">Você vai receber um e-mail assim que elas estiverem prontas para você escolher.</p>
+        </section>
+      </div>
+    );
+  }
+  return (
+    <div className="ca-wrap">
+      <section className="ca-intro">
+        <p className="eyebrow">Olá, {first}</p>
+        {k.stage === 'sent' ? (
+          <>
+            <h1 className="ca-title">Assine o seu<br />contrato</h1>
+            <p className="ca-lead">
+              Leia o contrato com atenção e assine logo abaixo. Você tem <b>{left(k.deadline)}</b> (até {fmtShort(k.deadline)}).
+              Depois que você assinar, {k.photographer} assina também — e então é só esperar as fotos.
+            </p>
+          </>
+        ) : k.stage === 'client-signed' ? (
+          <>
+            <h1 className="ca-title">Contrato<br />assinado</h1>
+            <p className="ca-lead">Obrigada! Você assinou em <b>{k.clientSignedText}</b>. Agora falta a assinatura de {k.photographer} — você recebe um e-mail quando o contrato estiver assinado por ambas as partes.</p>
+          </>
+        ) : (
+          <>
+            <h1 className="ca-title">Contrato<br />assinado</h1>
+            <p className="ca-lead">O contrato foi assinado por você e por {k.photographer}. Agora é só esperar: você recebe um e-mail quando as fotos estiverem prontas para você escolher.</p>
+          </>
+        )}
+      </section>
+      {k.stage === 'sent'
+        ? <SignForm me={me} onSigned={(contract) => { setMe((m) => ({ ...m, contract })); window.scrollTo({ top: 0, behavior: 'smooth' }); }} onExpired={onExpired} />
+        : <ContractSection me={me} onExpired={onExpired} open />}
+    </div>
+  );
+}
+
+function OpenContract({ me, onExpired, label }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const open = async () => {
+    setBusy(true); setErr('');
+    try { await downloadFile('/client/contract', me.contract.name, clientAuth); } catch (e) {
+      if (e.code === 'expired' || e.status === 401) onExpired(e.message); else setErr(e.message);
+    } finally { setBusy(false); }
+  };
+  return (
+    <>
+      <button type="button" className="btn btn-line" onClick={open} disabled={busy}>{busy ? 'Baixando…' : label}</button>
+      {err && <p className="err">{err}</p>}
+    </>
+  );
+}
+
+function SignForm({ me, onSigned, onExpired }) {
+  const [agree, setAgree] = useState(false);
+  const [name, setName] = useState('');
+  const [errors, setErrors] = useState({});
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    const local = {};
+    if (!agree) local.agree = 'Marque que você leu e concorda com o contrato.';
+    if (!name.trim()) local.name = 'Digite o seu nome completo.';
+    setErrors(local);
+    if (Object.keys(local).length) return;
+    setBusy(true);
+    try {
+      const r = await clientApi('/client/contract/sign', { method: 'POST', body: { agree, name } });
+      onSigned(r.contract);
+    } catch (err) {
+      if (err.code === 'expired' || err.status === 401) return onExpired(err.message);
+      setErrors(err.details || { form: err.message });
+    } finally { setBusy(false); }
+  };
+  return (
+    <section className="ca-section contract-sign">
+      <div className="contract-doc">
+        <span className="contract-doc-icon" aria-hidden="true">PDF</span>
+        <div><b>{me.contract.name}</b><span className="muted small">Código do contrato: {me.contract.jobHash.slice(0, 16)}…</span></div>
+        <OpenContract me={me} onExpired={onExpired} label="Ler o contrato" />
+      </div>
+      <form className="sign-form" onSubmit={submit} noValidate>
+        <h2 className="ca-h2">Assinatura</h2>
+        <label className="check">
+          <input type="checkbox" checked={agree} onChange={(e) => { setAgree(e.target.checked); setErrors((x) => ({ ...x, agree: undefined })); }} aria-invalid={errors.agree ? true : undefined} />
+          Li o contrato e concordo com todos os termos.
+        </label>
+        {errors.agree && <span className="err">{errors.agree}</span>}
+        <label>Digite o seu nome completo para assinar
+          <input value={name} onChange={(e) => { setName(e.target.value); setErrors((x) => ({ ...x, name: undefined })); }} placeholder={me.name}
+            autoComplete="name" aria-invalid={errors.name ? true : undefined} />
+          {errors.name && <span className="err">{errors.name}</span>}
+        </label>
+        <p className="muted small">Ao assinar, ficam registrados o seu nome, a data e a hora (com segundos), e um código único da sua assinatura. Ele aparece no contrato e você pode validá-lo aqui a qualquer momento.</p>
+        {errors.form && <p className="err" role="alert">{errors.form}</p>}
+        <button className="btn btn-accent" disabled={busy}>{busy ? 'Assinando…' : 'Assinar contrato'}</button>
+      </form>
+    </section>
+  );
+}
+
+/** Contrato depois da assinatura: download, as duas assinaturas e a validação de códigos. */
+function ContractSection({ me, onExpired, open = false }) {
+  const k = me.contract;
+  const [show, setShow] = useState(open);
+  const complete = k.stage === 'complete';
+  return (
+    <section className="ca-section contract-done">
+      {!open && (
+        <button type="button" className="ca-h2 contract-toggle" aria-expanded={show} onClick={() => setShow((s) => !s)}>
+          Seu contrato {complete ? '· assinado por ambas as partes' : ''} <span aria-hidden="true">{show ? '−' : '+'}</span>
+        </button>
+      )}
+      {show && (
+        <>
+          <div className="contract-doc">
+            <span className="contract-doc-icon" aria-hidden="true">PDF</span>
+            <div><b>{k.name}</b><span className="muted small">{complete ? 'Assinado por ambas as partes' : 'Assinado por você · falta a fotógrafa'}</span></div>
+            <OpenContract me={me} onExpired={onExpired} label={complete ? 'Baixar contrato assinado' : 'Baixar contrato'} />
+          </div>
+          <Hash value={k.jobHash} label="Código do contrato" />
+          <div className="sig-cards">
+            <SignatureCard role="Contratante (você)" name={me.name} signedText={k.clientSignedText} hash={k.clientSignHash} />
+            <SignatureCard role="Contratada (fotógrafa)" name={k.photographer} signedText={k.photographerSignedText} hash={k.photographerSignHash}
+              pending={k.photographerSignedAt ? null : 'Aguardando a assinatura da fotógrafa.'} />
+          </div>
+          <h3 className="ca-h3">Validar código</h3>
+          <HashValidator
+            intro="Cole um dos códigos do seu contrato para confirmar que ele é autêntico e não foi alterado."
+            check={(hash) => clientApi('/client/validate', { method: 'POST', body: { hash } }).catch((err) => { if (err.code === 'expired' || err.status === 401) onExpired(err.message); throw err; })}
+          />
+        </>
+      )}
+    </section>
   );
 }
 

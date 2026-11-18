@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import WhatsAppButton from './WhatsAppButton.jsx';
 import { STAGES, timeLeft, fmtDateTime, suggestLogin } from './clientUtils.js';
 import Help from './Help.jsx';
+import { HashValidator } from '../components/ContractBits.jsx';
 
 const EMPTY = { name: '', email: '', phone: '', username: '', selectionLimit: 30, days: 7 };
 
@@ -16,6 +17,7 @@ export default function ClientsAdmin() {
   const [filter, setFilter] = useState('active');
   // No celular o formulário começa fechado para a lista aparecer logo
   const [showNew, setShowNew] = useState(() => !window.matchMedia?.('(max-width: 700px)').matches);
+  const [showCheck, setShowCheck] = useState(() => window.location.hash === '#validar');
   const navigate = useNavigate();
 
   useEffect(() => { api('/admin/clients').then(setClients); }, []);
@@ -44,9 +46,21 @@ export default function ClientsAdmin() {
     <section className="admin-section">
       <div className="admin-title-row"><h1>Clientes <span className="count">{clients?.length ?? '…'}</span></h1></div>
       <Help>
-        Cada cliente recebe uma área privada para escolher as fotos. Cadastre o cliente, envie as fotos para escolha e clique em <b>Enviar acesso</b>:
-        o sistema cria uma senha e envia os dados de acesso por e-mail. O prazo de seleção começa quando o acesso é enviado.
+        Cada cliente recebe uma área privada. Ao aceitar um pedido, o cliente é criado aqui. Envie o contrato em PDF para assinatura: a senha é criada nesse momento
+        e o cliente assina digitalmente (prazo padrão de 7 dias); depois você assina. Com o contrato assinado, envie as fotos para escolha e avise o cliente — o prazo de seleção começa no aviso.
       </Help>
+
+      <div className="panel hash-panel" id="validar">
+        <button type="button" className="hash-panel-toggle" aria-expanded={showCheck} onClick={() => setShowCheck((v) => !v)}>
+          <h3>Validar código de contrato ou assinatura</h3><span aria-hidden="true">{showCheck ? '−' : '+'}</span>
+        </button>
+        {showCheck && (
+          <HashValidator
+            intro="Cole o código do contrato, da assinatura de um cliente ou da sua assinatura. Mostra a quem ele pertence, a data e a hora, e se os dados continuam intactos."
+            check={(hash) => api('/admin/clients/validate', { method: 'POST', body: { hash } })}
+          />
+        )}
+      </div>
 
       {!showNew && <button className="btn btn-accent wide new-client-btn" onClick={() => setShowNew(true)}>+ Novo cliente</button>}
       {showNew && <form className="client-new" onSubmit={create} noValidate>
@@ -91,6 +105,9 @@ export default function ClientsAdmin() {
                 : c.deleteAfter ? <><b className="danger">Fotos excluídas em</b><span>{fmtDateTime(c.deleteAfter)}</span></>
                 : c.noExpiry ? <><b>Sem prazo</b><span>seleção confirmada</span></>
                 : c.expiresAt ? <><b className={c.expired ? 'danger' : ''}>{timeLeft(c.expiresAt)}</b><span>{fmtDateTime(c.expiresAt)}</span></>
+                : ['signing', 'sign-expired'].includes(c.stage) ? <><b className={c.stage === 'sign-expired' ? 'danger' : ''}>{timeLeft(c.signing.deadline)}</b><span>para assinar</span></>
+                : c.stage === 'to-sign' ? <><b>Assine o contrato</b><span>o cliente já assinou</span></>
+                : c.stage === 'signed' ? <><b>Prazo parado</b><span>aguardando as fotos</span></>
                 : <span>{c.days} dias após o envio</span>}
             </div>
           </Link>

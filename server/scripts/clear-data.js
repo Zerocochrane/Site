@@ -64,7 +64,7 @@ for (const d of filesIn(CLIENTS_DIR)) {
   const dir = path.join(CLIENTS_DIR, d);
   if (!alive.has(d)) { fs.rmSync(dir, { recursive: true, force: true }); continue; }
   // clientes mantidos (demonstração): apaga só as fotos, mantém o contrato
-  for (const f of filesIn(dir)) if (f !== 'contract.pdf') fs.rmSync(path.join(dir, f), { recursive: true, force: true });
+  for (const f of filesIn(dir)) if (f !== 'contract.pdf' && f !== 'contract-signed.pdf') fs.rmSync(path.join(dir, f), { recursive: true, force: true });
 }
 for (const f of filesIn(path.join(PRIVATE_DIR, 'tmp'))) fs.rmSync(path.join(PRIVATE_DIR, 'tmp', f), { recursive: true, force: true });
 

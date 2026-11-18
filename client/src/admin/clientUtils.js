@@ -1,6 +1,10 @@
 // Small helpers shared by the client-area screens.
 export const STAGES = {
   draft: { label: 'Acesso não enviado', cls: 'draft' },
+  signing: { label: 'Aguardando assinatura', cls: 'selecting' },
+  'sign-expired': { label: 'Prazo de assinatura expirado', cls: 'expired' },
+  'to-sign': { label: 'Falta sua assinatura', cls: 'attention' },
+  signed: { label: 'Contrato assinado', cls: 'signed' },
   selecting: { label: 'Escolhendo fotos', cls: 'selecting' },
   expired: { label: 'Acesso expirado', cls: 'expired' },
   confirmed: { label: 'Seleção confirmada', cls: 'confirmed' },

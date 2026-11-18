@@ -4,7 +4,8 @@
 import db, { nowIso } from './clientsDb.js';
 import { removeClientPhotoFiles } from './clientFiles.js';
 import { purgeOldVisits } from './trafficDb.js';
-import { sendReminderEmail } from './clientEmails.js';
+import { sendReminderEmail, sendSignReminderEmail } from './clientEmails.js';
+import './signatures.js'; // colunas do contrato
 
 const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
 
@@ -26,7 +27,24 @@ export async function sendDueReminders() {
       console.error(`Could not send reminder to ${c.email}:`, err.message);
     }
   }
-  return due.length;
+  // contrato esperando a assinatura do cliente
+  const toSign = db.prepare(`
+    SELECT * FROM clients
+    WHERE contract_sent_at IS NOT NULL AND client_signed_at IS NULL AND sign_reminder_sent_at IS NULL AND sign_deadline IS NOT NULL AND archived_at IS NULL
+  `).all().filter((c) => {
+    const left = Date.parse(c.sign_deadline) - now;
+    return left > 0 && left <= TWO_DAYS;
+  });
+  for (const c of toSign) {
+    try {
+      await sendSignReminderEmail(c);
+      db.prepare('UPDATE clients SET sign_reminder_sent_at = ? WHERE id = ?').run(nowIso(), c.id);
+      console.log(`Contract reminder sent to ${c.email}`);
+    } catch (err) {
+      console.error(`Could not send contract reminder to ${c.email}:`, err.message);
+    }
+  }
+  return due.length + toSign.length;
 }
 
 /**

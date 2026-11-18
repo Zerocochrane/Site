@@ -78,7 +78,7 @@ export function removeClientPhotoFiles(clientId) {
   const dir = clientDir(clientId);
   if (!fs.existsSync(dir)) return;
   for (const name of fs.readdirSync(dir)) {
-    if (name === 'contract.pdf') continue;
+    if (name === 'contract.pdf' || name === 'contract-signed.pdf') continue; // contratos ficam
     fs.rmSync(path.join(dir, name), { recursive: true, force: true });
   }
 }

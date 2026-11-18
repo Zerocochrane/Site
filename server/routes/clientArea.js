@@ -7,10 +7,21 @@ import { createClientToken, requireClientToken } from '../auth.js';
 import { verifyPassword } from '../passwords.js';
 import { variantPath } from '../clientFiles.js';
 import { mediaUrl, zipUrl, checkZipSig } from '../media.js';
-import { sendSelectionToPhotographer } from '../clientEmails.js';
+import { sendSelectionToPhotographer, sendClientSignedToPhotographer } from '../clientEmails.js';
+import { siteUrl } from '../mail.js';
+import { contractStage, newClientSignHash, buildSignedPdf, signedPath, lookupHash, fmtSigned } from '../signatures.js';
+
+/** Nome digitado x nome do cadastro: ignora maiúsculas, acentos e espaços a mais. */
+const sameName = (a, b) => {
+  const n = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  return n(a) && n(a) === n(b);
+};
 
 const router = Router();
 const EXPIRED = { error: 'O seu prazo de acesso terminou. Fale com a fotógrafa se precisar de mais tempo.', code: 'expired' };
+const expiredFor = (c) => (c.contract_sent_at && !c.client_signed_at && !c.access_sent_at
+  ? { error: 'O prazo para assinar o contrato terminou. Fale com a fotógrafa para receber um novo prazo.', code: 'expired' }
+  : EXPIRED);
 
 // Login attempts: 8 per username+IP per 15 minutes
 const attempts = new Map();
@@ -31,7 +42,7 @@ router.post('/login', (req, res) => {
     attempts.get(key).push(Date.now());
     return res.status(401).json({ error: 'Login ou senha incorretos.' });
   }
-  if (isExpired(c)) return res.status(403).json(EXPIRED);
+  if (isExpired(c)) return res.status(403).json(expiredFor(c));
   attempts.delete(key);
   res.json({ token: createClientToken(c.id), name: c.name });
 });
@@ -40,20 +51,23 @@ router.post('/login', (req, res) => {
 function requireActiveClient(req, res, next) {
   const c = getClient(req.clientId);
   if (!c || !c.password_hash) return res.status(401).json({ error: 'Faça login novamente.', code: 'login' });
-  if (isExpired(c)) return res.status(403).json(EXPIRED);
+  if (isExpired(c)) return res.status(403).json(expiredFor(c));
   req.client = c;
   next();
 }
 
 router.get('/me', requireClientToken, requireActiveClient, (req, res) => {
   const c = req.client;
-  const proofs = clientPhotos(c.id, 'proof');
+  // fotos para escolher só aparecem depois do aviso "suas fotos estão prontas"
+  const proofs = c.access_sent_at ? clientPhotos(c.id, 'proof') : [];
   const done = c.done_notified_at ? clientPhotos(c.id, 'done') : [];
   const settings = getSettings();
   res.json({
     name: c.name,
     photographer: settings.name,
-    expiresAt: c.confirmed_at ? null : c.expires_at,   // no deadline once the selection is confirmed
+    expiresAt: c.confirmed_at || !c.access_sent_at ? null : c.expires_at,   // no deadline once the selection is confirmed
+    photosReleased: !!c.access_sent_at,
+    contract: contractInfo(c, settings.name),
     deleteAfter: c.delete_after,                       // set by the first download
     retentionMonths: RETENTION_MONTHS,
     selectionLimit: c.selection_limit,
@@ -71,8 +85,64 @@ router.get('/me', requireClientToken, requireActiveClient, (req, res) => {
   });
 });
 
+function contractInfo(c, photographer) {
+  if (!c.contract_sent_at) return null;
+  return {
+    stage: contractStage(c),                 // sent | client-signed | complete
+    name: c.contract_name,
+    deadline: c.client_signed_at ? null : c.sign_deadline,
+    jobHash: c.job_hash,
+    clientSignedAt: c.client_signed_at,
+    clientSignedText: c.client_signed_at ? fmtSigned(c.client_signed_at) : null,
+    clientSignHash: c.client_sign_hash,
+    photographer: photographer || 'Fotógrafa',
+    photographerSignedAt: c.photographer_signed_at,
+    photographerSignedText: c.photographer_signed_at ? fmtSigned(c.photographer_signed_at) : null,
+    photographerSignHash: c.photographer_sign_hash,
+  };
+}
+
+// O contrato em PDF (com a página de assinaturas atualizada).
+router.get('/contract', requireClientToken, requireActiveClient, (req, res) => {
+  const c = req.client;
+  if (!c.contract_sent_at || !fs.existsSync(signedPath(c.id))) return res.status(404).json({ error: 'Contrato não encontrado' });
+  const base = c.contract_name.replace(/\.pdf$/i, '');
+  res.download(signedPath(c.id), `${base}${c.photographer_signed_at ? ' - assinado' : ''}.pdf`);
+});
+
+router.post('/contract/sign', requireClientToken, requireActiveClient, async (req, res, next) => {
+  try {
+    const c = req.client;
+    if (!c.contract_sent_at) return res.status(404).json({ error: 'Não há contrato para assinar.' });
+    if (c.client_signed_at) return res.status(409).json({ error: 'Você já assinou este contrato.' });
+    const errors = {};
+    if (req.body?.agree !== true) errors.agree = 'Marque que você leu e concorda com o contrato.';
+    const typed = String(req.body?.name || '').trim().slice(0, 160);
+    if (!sameName(typed, c.name)) errors.name = `Digite o seu nome completo exatamente como no contrato: ${c.name}`;
+    if (Object.keys(errors).length) return res.status(400).json({ error: 'Confira os campos.', errors });
+    const signedAt = nowIso();
+    db.transaction(() => {
+      const hash = newClientSignHash(c, { signedAt, ip: req.ip, userAgent: req.get('user-agent'), typedName: typed });
+      db.prepare('UPDATE clients SET client_signed_at = ?, client_sign_hash = ? WHERE id = ?').run(signedAt, hash, c.id);
+    })();
+    const updated = getClient(c.id);
+    await buildSignedPdf(updated, { photographerName: getSettings().name || 'Fotógrafa', siteUrl: siteUrl() });
+    sendClientSignedToPhotographer(updated).catch((e) => console.error('Signature email failed:', e.message));
+    res.json({ contract: contractInfo(updated, getSettings().name) });
+  } catch (e) { next(e); }
+});
+
+// Validar um código (só os códigos do próprio contrato).
+router.post('/validate', requireClientToken, requireActiveClient, (req, res) => {
+  const r = lookupHash(req.body?.hash, { clientId: req.client.id });
+  if (r?.invalid) return res.status(400).json({ error: 'O código tem 64 caracteres (números e letras de a a f).' });
+  if (!r) return res.status(404).json({ error: 'Código não encontrado no seu contrato. Confira se foi copiado inteiro.' });
+  res.json(r);
+});
+
 router.put('/photos/:id/select', requireClientToken, requireActiveClient, (req, res) => {
   const c = req.client;
+  if (!c.access_sent_at) return res.status(409).json({ error: 'As fotos ainda não foram liberadas.' });
   if (c.confirmed_at) return res.status(409).json({ error: 'A sua seleção já foi confirmada e não pode mais ser alterada.' });
   const p = db.prepare("SELECT * FROM client_photos WHERE id = ? AND client_id = ? AND kind = 'proof'").get(req.params.id, c.id);
   if (!p) return res.status(404).json({ error: 'Foto não encontrada' });
@@ -87,6 +157,7 @@ router.put('/photos/:id/select', requireClientToken, requireActiveClient, (req, 
 
 router.post('/confirm', requireClientToken, requireActiveClient, async (req, res) => {
   const c = req.client;
+  if (!c.access_sent_at) return res.status(409).json({ error: 'As fotos ainda não foram liberadas.' });
   if (c.confirmed_at) return res.status(409).json({ error: 'A sua seleção já foi confirmada.' });
   const chosen = db.prepare("SELECT original_name FROM client_photos WHERE client_id = ? AND kind = 'proof' AND selected = 1 ORDER BY position, id").all(c.id);
   if (!chosen.length) return res.status(400).json({ error: 'Escolha pelo menos uma foto antes de confirmar.' });

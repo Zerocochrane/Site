@@ -7,6 +7,7 @@ import Lightbox from '../components/Lightbox.jsx';
 import { useDraft, useUnsaved } from './unsaved.jsx';
 import WhatsAppButton from './WhatsAppButton.jsx';
 import { STAGES, timeLeft, fmtDateTime } from './clientUtils.js';
+import { Hash, SignatureCard } from '../components/ContractBits.jsx';
 
 const editable = (c) => ({
   name: c.name, email: c.email, phone: c.phone || '', username: c.username, selectionLimit: c.selectionLimit, days: c.days,
@@ -30,6 +31,10 @@ export default function ClientAdmin() {
   const [extendDays, setExtendDays] = useState(3);
   const [extendNotify, setExtendNotify] = useState(true);
   const [reopenDays, setReopenDays] = useState(3);
+  const [signDays, setSignDays] = useState(null);       // prazo para assinar (antes do envio)
+  const [signExtend, setSignExtend] = useState(3);
+  const [signNotify, setSignNotify] = useState(true);
+  const [agree, setAgree] = useState(false);
   const [proofFilter, setProofFilter] = useState('all');
   const [view, setView] = useState(null);         // { list, index } for the lightbox
   const [busy, setBusy] = useState('');
@@ -45,6 +50,8 @@ export default function ClientAdmin() {
   if (!c || !draft) return <section className="admin-section"><p className="muted">Carregando…</p></section>;
 
   const stage = STAGES[c.stage];
+  const k = c.signing;
+  const awaitingSignature = ['sent', 'expired'].includes(k.stage);
   const sent = !!c.accessSentAt;
   const loginLink = `${window.location.origin}/cliente`;
   const selected = c.proofs.filter((p) => p.selected);
@@ -72,9 +79,45 @@ export default function ClientAdmin() {
   const sendAccess = () => run('access', async () => {
     if (sent && !window.confirm('Isso cria uma NOVA senha (a antiga deixa de funcionar) e envia por e-mail ao cliente. Continuar?')) return;
     const r = await api(`/admin/clients/${id}/send-access`, { method: 'POST' });
-    setAccess({ password: r.password, emailed: r.emailed, note: emailNote(r), reset: sent });
     await refresh();
+    if (r.password) setAccess({ password: r.password, emailed: r.emailed, note: emailNote(r), reset: sent });
+    else say(`Cliente avisado: as fotos estão liberadas para escolha (ele entra com a mesma senha do contrato). ${emailNote(r)}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  const newPassword = () => run('access', async () => {
+    if (!window.confirm('Criar uma NOVA senha (a antiga deixa de funcionar) e enviar por e-mail ao cliente?')) return;
+    const r = await api(`/admin/clients/${id}/send-access`, { method: 'POST', body: { newPassword: true } });
+    await refresh();
+    setAccess({ password: r.password, emailed: r.emailed, note: emailNote(r), reset: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // ---- Assinatura do contrato ----
+  const sendContract = () => run('sign', async () => {
+    const days = Number(signDays ?? c.signDays);
+    if (!window.confirm(`Enviar o contrato para ${c.name} assinar? ${c.hasPassword ? 'O cliente usa a senha que já tem.' : 'Uma senha será criada e enviada por e-mail.'} Prazo para assinar: ${days} dia(s).\n\nDepois do envio, o arquivo não pode mais ser trocado (só cancelando o envio).`)) return;
+    const r = await api(`/admin/clients/${id}/contract/send`, { method: 'POST', body: { days } });
+    await refresh();
+    if (r.password) setAccess({ password: r.password, emailed: r.emailed, note: emailNote(r), contract: true });
+    else say(`Contrato enviado para assinatura. ${emailNote(r)}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  const extendSign = () => run('sign', async () => {
+    const r = await api(`/admin/clients/${id}/contract/extend`, { method: 'POST', body: { days: Number(signExtend), notify: signNotify } });
+    await refresh();
+    say(`Prazo para assinar estendido até ${fmtDateTime(r.client.signing.deadline)}.${signNotify ? ` ${emailNote(r)}` : ''}`);
+  });
+  const cancelSign = () => run('sign', async () => {
+    if (!window.confirm('Cancelar o envio do contrato? O código do contrato deixa de valer e o cliente não consegue mais assinar. Depois você pode trocar o arquivo e enviar de novo.')) return;
+    await api(`/admin/clients/${id}/contract/cancel`, { method: 'POST' });
+    await refresh();
+    say('Envio cancelado. Você pode trocar o contrato e enviar de novo.');
+  });
+  const signContract = () => run('sign', async () => {
+    const r = await api(`/admin/clients/${id}/contract/sign`, { method: 'POST', body: { agree } });
+    await refresh();
+    setAgree(false);
+    say(`Contrato assinado por ambas as partes. ${r.emailed ? 'O cliente recebeu o contrato assinado por e-mail.' : emailNote(r)}`);
   });
 
   const extend = () => run('extend', async () => {
@@ -155,7 +198,7 @@ export default function ClientAdmin() {
 
       {access && (
         <div className="access-box">
-          <h3>{access.reset ? 'Nova senha criada' : 'Acesso enviado'}</h3>
+          <h3>{access.contract ? 'Contrato enviado para assinatura' : access.reset ? 'Nova senha criada' : 'Acesso enviado'}</h3>
           <p>{access.note} A senha aparece só agora — ela é guardada criptografada e não pode ser consultada depois.</p>
           <dl>
             <dt>Login</dt><dd>{c.username}</dd>
@@ -178,14 +221,23 @@ export default function ClientAdmin() {
       {!c.archivedAt && <div className="client-panels">
         <div className="panel">
           <h3>Acesso</h3>
-          {!sent ? (
+          {!sent && awaitingSignature ? (
             <>
-              <p>O cliente ainda não consegue entrar. Envie as fotos para escolha e depois envie o acesso. O prazo de <b>{saved.days} dias</b> começa no envio.</p>
+              <p>O cliente entra na área do cliente só para assinar o contrato. As fotos são liberadas depois da assinatura.</p>
+              <p className="muted small">Prazo para assinar: veja em <b>Contrato</b>, abaixo.</p>
+              <button className="link-btn" onClick={newPassword} disabled={busy === 'access'}>Criar nova senha e enviar por e-mail</button>
+            </>
+          ) : !sent ? (
+            <>
+              {k.clientSignedAt
+                ? <p>Contrato assinado pelo cliente — o prazo está parado esperando as fotos. Envie as fotos para escolha e avise o cliente: os <b>{saved.days} dias</b> para escolher começam no aviso.</p>
+                : <p>O cliente ainda não consegue entrar. {c.contract ? 'Envie o contrato para assinatura (abaixo) ou, sem contrato, envie' : 'Envie'} as fotos para escolha e depois envie o acesso. O prazo de <b>{saved.days} dias</b> começa no envio.</p>}
               <button className="btn btn-accent" onClick={sendAccess} disabled={busy === 'access' || !c.proofs.length || dirty}>
-                {busy === 'access' ? 'Enviando…' : 'Enviar acesso por e-mail'}
+                {busy === 'access' ? 'Enviando…' : c.hasPassword ? 'Avisar o cliente: fotos prontas para escolher' : 'Enviar acesso por e-mail'}
               </button>
               {!c.proofs.length && <p className="muted small">Envie pelo menos uma foto primeiro.</p>}
               {dirty && <p className="muted small">Salve suas alterações primeiro.</p>}
+              {c.hasPassword && <button className="link-btn" onClick={newPassword} disabled={busy === 'access'}>Criar nova senha e enviar por e-mail</button>}
             </>
           ) : c.deleteAfter ? (
             <>
@@ -231,7 +283,7 @@ export default function ClientAdmin() {
           <p className="big-when"><b>{selected.length} / {c.selectionLimit}</b><span>fotos escolhidas</span></p>
           {c.confirmedAt
             ? <p>✓ Confirmada em {fmtDateTime(c.confirmedAt)} — o cliente não pode mais alterar.</p>
-            : <p className="muted">{sent ? 'Ainda não confirmada. O cliente pode mudar a escolha até confirmar.' : 'Aguardando o envio do acesso.'}</p>}
+            : <p className="muted">{sent ? 'Ainda não confirmada. O cliente pode mudar a escolha até confirmar.' : awaitingSignature ? 'Aguardando a assinatura do contrato.' : 'Aguardando o envio do acesso.'}</p>}
           {selected.length > 0 && (
             <div className="btn-row">
               <button className="btn btn-line small" onClick={downloadList}>Baixar lista (.txt)</button>
@@ -293,23 +345,88 @@ export default function ClientAdmin() {
         <label>Parcelas<input type="number" min="1" max="48" value={draft.installments} onChange={set('installments')} placeholder="1" />{errors.installments && <span className="err">{errors.installments}</span>}</label>
       </div>
 
-      <div className="panel contract-panel">
+      <div className="panel contract-panel" id="contrato">
         <h3>Contrato</h3>
-        {c.contract ? (
-          <div className="contract-row">
-            <span className="contract-file">{c.contract.name}</span>
-            <span className="muted small">enviado em {fmtDateTime(c.contract.uploadedAt)}</span>
-            <button className="btn btn-dark small" onClick={() => run('contract', () => downloadFile(`/admin/clients/${id}/contract`, c.contract.name))}>Baixar</button>
-            <label className="btn btn-line small file-btn">Substituir<input type="file" accept="application/pdf,.pdf" onChange={(e) => { uploadContract(e.target.files[0]); e.target.value = ''; }} /></label>
-            <button className="link-btn danger" onClick={removeContract}>Excluir</button>
-          </div>
-        ) : (
-          <label className={`btn btn-line file-btn ${busy === 'contract' ? 'disabled' : ''}`}>
-            {busy === 'contract' ? 'Enviando…' : '+ Enviar contrato (PDF)'}
-            <input type="file" accept="application/pdf,.pdf" disabled={busy === 'contract'} onChange={(e) => { uploadContract(e.target.files[0]); e.target.value = ''; }} />
-          </label>
+        {k.stage === 'none' && (
+          <>
+            <label className={`btn btn-line file-btn ${busy === 'contract' ? 'disabled' : ''}`}>
+              {busy === 'contract' ? 'Enviando…' : '+ Enviar contrato (PDF)'}
+              <input type="file" accept="application/pdf,.pdf" disabled={busy === 'contract'} onChange={(e) => { uploadContract(e.target.files[0]); e.target.value = ''; }} />
+            </label>
+            <p className="muted small">Apenas PDF, até 25 MB. Depois você envia o contrato para o cliente assinar digitalmente.</p>
+          </>
         )}
-        <p className="muted small">Apenas PDF, até 25 MB. O contrato fica guardado de forma privada e só você pode baixá-lo.</p>
+
+        {k.stage === 'uploaded' && (
+          <>
+            <div className="contract-row">
+              <span className="contract-file">{c.contract.name}</span>
+              <span className="muted small">enviado em {fmtDateTime(c.contract.uploadedAt)}</span>
+              <button className="btn btn-dark small" onClick={() => run('contract', () => downloadFile(`/admin/clients/${id}/contract`, c.contract.name))}>Baixar</button>
+              <label className="btn btn-line small file-btn">Substituir<input type="file" accept="application/pdf,.pdf" onChange={(e) => { uploadContract(e.target.files[0]); e.target.value = ''; }} /></label>
+              <button className="link-btn danger" onClick={removeContract}>Excluir</button>
+            </div>
+            {!c.archivedAt && (
+              <div className="sign-send">
+                <label>Prazo para o cliente assinar
+                  <span className="days-input"><input type="number" min="1" max="365" value={signDays ?? c.signDays} onChange={(e) => setSignDays(e.target.value)} /> dias</span>
+                </label>
+                <button className="btn btn-accent" onClick={sendContract} disabled={busy === 'sign' || dirty}>{busy === 'sign' ? 'Enviando…' : 'Enviar para assinatura'}</button>
+                <p className="muted small">
+                  {c.hasPassword ? 'O cliente já tem senha e recebe um e-mail avisando que o contrato está disponível para assinar.' : 'Cria a senha do cliente e envia por e-mail, com o aviso de que o contrato está disponível para assinar digitalmente.'}
+                  {' '}Depois que o cliente assinar, o prazo para e você assina em seguida.
+                </p>
+                {dirty && <p className="muted small">Salve os dados do cliente primeiro — o nome vai no contrato.</p>}
+              </div>
+            )}
+          </>
+        )}
+
+        {k.stage !== 'none' && k.stage !== 'uploaded' && (
+          <>
+            <div className="contract-row">
+              <span className="contract-file">{c.contract.name}</span>
+              <button className="btn btn-dark small" onClick={() => run('contract', () => downloadFile(`/admin/clients/${id}/contract/signed`, c.contract.name))}>
+                {k.stage === 'complete' ? 'Baixar contrato assinado' : 'Baixar PDF com assinaturas'}
+              </button>
+              <button className="link-btn" onClick={() => run('contract', () => downloadFile(`/admin/clients/${id}/contract`, c.contract.name))}>Original</button>
+            </div>
+            <Hash value={k.jobHash} label="Código do contrato (serviço + cliente)" />
+
+            {awaitingSignature && (
+              <div className="sign-wait">
+                <p className="big-when">
+                  <b className={k.stage === 'expired' ? 'danger' : ''}>{timeLeft(k.deadline)}</b>
+                  <span>para o cliente assinar · {k.stage === 'expired' ? 'prazo terminou em' : 'até'} {fmtDateTime(k.deadline)}</span>
+                </p>
+                <p className="muted small">Enviado em {fmtDateTime(k.sentAt)}{k.reminderSentAt && <> · Lembrete de 2 dias enviado em {fmtDateTime(k.reminderSentAt)}</>}</p>
+                <div className="extend-row">
+                  <label>Adicionar<input type="number" min="1" max="365" value={signExtend} onChange={(e) => setSignExtend(e.target.value)} />dias</label>
+                  <button className="btn btn-dark small" onClick={extendSign} disabled={busy === 'sign'}>{k.stage === 'expired' ? 'Reabrir prazo' : 'Estender'}</button>
+                </div>
+                <label className="check"><input type="checkbox" checked={signNotify} onChange={(e) => setSignNotify(e.target.checked)} /> Enviar o novo prazo ao cliente por e-mail</label>
+                <button className="link-btn danger" onClick={cancelSign} disabled={busy === 'sign'}>Cancelar envio (para trocar o contrato)</button>
+              </div>
+            )}
+
+            <div className="sig-cards">
+              <SignatureCard role="Contratante (cliente)" name={c.name} signedText={k.clientSignedText} hash={k.clientSignHash}
+                pending={k.clientSignedAt ? null : 'Aguardando a assinatura do cliente.'} />
+              <SignatureCard role="Contratada (você)" name={k.photographerName} signedText={k.photographerSignedText} hash={k.photographerSignHash}
+                pending={k.photographerSignedAt ? null : k.clientSignedAt ? 'Falta a sua assinatura.' : 'Você assina depois do cliente.'} />
+            </div>
+
+            {k.stage === 'client-signed' && (
+              <div className="sign-mine">
+                <h4>Sua assinatura</h4>
+                <label className="check"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> Li o contrato e concordo com todos os termos.</label>
+                <button className="btn btn-accent" onClick={signContract} disabled={!agree || busy === 'sign'}>{busy === 'sign' ? 'Assinando…' : `Assinar como ${k.photographerName}`}</button>
+                <p className="muted small">Assina com o nome definido em Configurações (“{k.photographerName}”). O cliente recebe o contrato assinado por ambas as partes por e-mail.</p>
+              </div>
+            )}
+            <p className="muted small">Para conferir qualquer código, use <Link to="/admin/clients#validar">Validar código</Link> na página Clientes.</p>
+          </>
+        )}
       </div>
 
       {!c.archivedAt && <>
