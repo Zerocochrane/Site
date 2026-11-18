@@ -24,6 +24,8 @@ export default function Availability() {
   const [days, setDays] = useState({});
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
+  // Remount key for BookingForm; switching a picked date to "no date" keeps it, so typed data survives
+  const [formKey, setFormKey] = useState(0);
   const [nextFree, setNextFree] = useState(undefined); // próximo dia livre depois do mês exibido (undefined = carregando)
   const touched = useRef(false); // a pessoa já mudou de mês?
   const panelRef = useRef(null);
@@ -56,6 +58,7 @@ export default function Availability() {
   // Ao escolher um dia (ou "sem data"), leva até o formulário se ele estiver fora da tela (celular)
   const choose = (value) => {
     setSelected(value);
+    setFormKey((k) => k + 1); // new pick from the calendar = fresh form
     requestAnimationFrame(() => {
       const el = panelRef.current;
       if (!el) return;
@@ -117,11 +120,12 @@ export default function Availability() {
         <div className="booking-panel" ref={panelRef}>
           {selected ? (
             <BookingForm
-              key={selected}
+              key={formKey}
               date={selected === NO_DATE ? null : selected}
               categories={categories}
               onBooked={load}
               onPickDate={selected === NO_DATE ? () => setSelected(null) : null}
+              onSkipDate={selected !== NO_DATE ? () => setSelected(NO_DATE) : null}
             />
           ) : (
             <div className="booking-empty">
@@ -166,7 +170,7 @@ function ExtraField({ field, value, onChange, error }) {
   );
 }
 
-function BookingForm({ date, categories, onBooked, onPickDate }) {
+function BookingForm({ date, categories, onBooked, onPickDate, onSkipDate }) {
   const formRef = useRef(null);
   const [form, setForm] = useState({
     categoryId: null, durationHours: null, name: '', email: '', phone: '',
@@ -234,7 +238,14 @@ function BookingForm({ date, categories, onBooked, onPickDate }) {
   return (
     <form className="booking-form" onSubmit={submit} noValidate ref={formRef}>
       {date ? (
-        <p className="booking-date">{prettyDate(date)}</p>
+        <div className="booking-date nodate">
+          <p>{prettyDate(date)}</p>
+          {onSkipDate && (
+            <span className="muted small">
+              <button type="button" className="link-btn" onClick={() => { setErrors((er) => ({ ...er, eventDate: undefined })); onSkipDate(); }}>Ainda não tenho data / enviar sem data</button>
+            </span>
+          )}
+        </div>
       ) : (
         <div className="booking-date nodate">
           <p>Sem data definida</p>
