@@ -8,6 +8,7 @@ import { useDraft, useUnsaved } from './unsaved.jsx';
 import WhatsAppButton from './WhatsAppButton.jsx';
 import { STAGES, timeLeft, fmtDateTime } from './clientUtils.js';
 import { Hash, SignatureCard } from '../components/ContractBits.jsx';
+import { StatusBadge, StatusSteps } from './StatusBits.jsx';
 
 const editable = (c) => ({
   name: c.name, email: c.email, phone: c.phone || '', username: c.username, selectionLimit: c.selectionLimit, days: c.days,
@@ -141,6 +142,11 @@ export default function ClientAdmin() {
     say(`Cliente avisado — agora ele pode ver e baixar as fotos. ${emailNote(r)}`);
   });
 
+  const toggleStatus = (key, on) => run('status', async () => {
+    const updated = await api(`/admin/clients/${id}/status`, { method: 'POST', body: { key, on } });
+    setC((old) => ({ ...old, status: updated.status, statusSteps: updated.statusSteps, statusAutoIndex: updated.statusAutoIndex }));
+  });
+
   const removePhoto = (p, kind) => run(`del${p.id}`, async () => {
     if (!window.confirm(`Excluir “${p.name}”? Isso não pode ser desfeito.`)) return;
     await api(`/admin/clients/${id}/photos/${p.id}`, { method: 'DELETE' });
@@ -183,6 +189,15 @@ export default function ClientAdmin() {
     <section className="admin-section has-save-bar client-admin">
       <nav className="crumbs"><Link to="/admin/clients">Clientes</Link><span>/</span><b>{saved.name}</b></nav>
 
+      <div className="client-layout">
+      <aside className="client-aside">
+        <details className="key-details" open={!window.matchMedia?.('(max-width: 1099px)').matches}>
+          <summary>Status: <StatusBadge status={c.status} /></summary>
+          <StatusSteps steps={c.statusSteps} current={c.status} autoIndex={c.statusAutoIndex} busy={busy === 'status'} onToggle={toggleStatus} />
+        </details>
+      </aside>
+      <div className="client-main">
+
       <div className="client-head">
         <div>
           <h1 className="client-title">{saved.name}</h1>
@@ -190,7 +205,8 @@ export default function ClientAdmin() {
         </div>
         <div className="client-head-actions">
           <WhatsAppButton client={saved} />
-          <span className={`stage big ${stage.cls}`}>{stage.label}</span>
+          <StatusBadge status={c.status} big />
+          {['to-sign', 'sign-expired', 'expired', 'archived'].includes(c.stage) && <span className={`stage ${stage.cls}`}>{stage.label}</span>}
         </div>
       </div>
 
@@ -500,6 +516,9 @@ export default function ClientAdmin() {
 
       <div className="danger-zone">
         <button className="btn btn-line small danger-btn" onClick={removeClient}>{c.archivedAt ? 'Excluir cliente definitivamente' : 'Excluir cliente e todas as fotos'}</button>
+      </div>
+
+      </div>
       </div>
 
       {view && (

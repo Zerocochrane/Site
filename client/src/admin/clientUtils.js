@@ -38,3 +38,24 @@ export function whatsappUrl(phone, text = '') {
   if (digits.length <= 11) digits = `55${digits}`; // DDD + número, sem código do país
   return `https://wa.me/${digits}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 }
+
+/**
+ * Status do cliente, na ordem do trabalho. `manual`: marcado pela fotógrafa.
+ * As cores ficam no CSS (.st-<chave>), com versões para o modo escuro.
+ */
+export const STATUS_LIST = [
+  { key: 'approved', label: 'Recém-aprovado', how: 'Ao aceitar o pedido (ou cadastrar o cliente).' },
+  { key: 'discussing', label: 'Discutindo contrato', manual: true, how: 'Você marca.' },
+  { key: 'awaiting-signature', label: 'Aguardando assinatura', long: 'Aguardando assinatura do contrato', how: 'Ao enviar o contrato para assinatura; vale até as duas partes assinarem.' },
+  { key: 'awaiting-event', label: 'Aguardando o evento', how: 'Quando o contrato está assinado pelas duas partes.' },
+  { key: 'event-done', label: 'Evento realizado', how: 'A partir da data do evento.' },
+  { key: 'backup', label: 'Backup das fotos', manual: true, how: 'Você marca.' },
+  { key: 'preselected', label: 'Pré-seleção feita', manual: true, how: 'Você marca.' },
+  { key: 'raw-uploaded', label: 'Fotos brutas enviadas', how: 'Ao avisar o cliente que as fotos estão prontas para escolher.' },
+  { key: 'raw-selected', label: 'Cliente escolheu', long: 'Fotos escolhidas pelo cliente', how: 'Quando o cliente confirma a seleção.' },
+  { key: 'editing', label: 'Em edição', long: 'Fotos em edição', manual: true, how: 'Você marca.' },
+  { key: 'edited-uploaded', label: 'Editadas enviadas', long: 'Fotos editadas enviadas', how: 'Ao avisar o cliente que as fotos editadas estão prontas.' },
+  { key: 'downloaded', label: 'Cliente baixou', long: 'Cliente baixou as fotos', how: 'No primeiro download das fotos editadas.' },
+];
+export const STATUS = Object.fromEntries(STATUS_LIST.map((s, i) => [s.key, { ...s, n: i + 1 }]));
+export const FINISHED = ['edited-uploaded', 'downloaded'];

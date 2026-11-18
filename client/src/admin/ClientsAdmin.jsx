@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import WhatsAppButton from './WhatsAppButton.jsx';
-import { STAGES, timeLeft, fmtDateTime, suggestLogin } from './clientUtils.js';
+import { timeLeft, fmtDateTime, suggestLogin, FINISHED } from './clientUtils.js';
+import { StatusBadge, StatusKey } from './StatusBits.jsx';
 import Help from './Help.jsx';
 import { HashValidator } from '../components/ContractBits.jsx';
 
@@ -15,6 +16,7 @@ export default function ClientsAdmin() {
   const [errors, setErrors] = useState({});
   const [busy, setBusy] = useState(false);
   const [filter, setFilter] = useState('active');
+  const [statusFilter, setStatusFilter] = useState(null);
   // No celular o formulário começa fechado para a lista aparecer logo
   const [showNew, setShowNew] = useState(() => !window.matchMedia?.('(max-width: 700px)').matches);
   const [showCheck, setShowCheck] = useState(() => window.location.hash === '#validar');
@@ -39,8 +41,16 @@ export default function ClientsAdmin() {
     } finally { setBusy(false); }
   };
 
-  const shown = (clients || []).filter((c) =>
-    filter === 'all' ? true : filter === 'active' ? !['delivered', 'archived'].includes(c.stage) : ['delivered', 'archived'].includes(c.stage));
+  const finished = (c) => !!c.archivedAt || FINISHED.includes(c.status);
+  const counts = (clients || []).reduce((m, c) => ({ ...m, [c.status]: (m[c.status] || 0) + 1 }), {});
+  const shown = (clients || []).filter((c) => (statusFilter
+    ? c.status === statusFilter
+    : filter === 'all' ? true : filter === 'active' ? !finished(c) : finished(c)));
+  // avisos que pedem atenção, além do status
+  const alert = (c) => (c.stage === 'to-sign' ? ['attention', 'Falta sua assinatura']
+    : c.stage === 'sign-expired' ? ['danger', 'Prazo de assinatura expirou']
+    : c.stage === 'expired' ? ['danger', 'Prazo de escolha expirou']
+    : c.archivedAt ? ['muted', 'Arquivado'] : null);
 
   return (
     <section className="admin-section">
@@ -77,26 +87,42 @@ export default function ClientsAdmin() {
         <button className="btn btn-accent" disabled={busy || !form.name.trim()}>{busy ? 'Criando…' : '+ Cadastrar cliente'}</button>
       </form>}
 
+      <div className="clients-layout">
+      <aside className="clients-aside">
+        <details className="key-details" open={typeof window !== 'undefined' && !window.matchMedia?.('(max-width: 1099px)').matches}>
+          <summary>Legenda dos status</summary>
+          <StatusKey counts={counts} active={statusFilter} onPick={setStatusFilter} />
+        </details>
+      </aside>
+      <div className="clients-main">
       <div className="admin-title-row client-list-head">
         <h2 className="h2-display">Todos os clientes</h2>
         <div className="filters">
           {[['active', 'Em andamento'], ['delivered', 'Entregues e arquivados'], ['all', 'Todos']].map(([k, l]) => (
-            <button key={k} className={`chip ${filter === k ? 'on' : ''}`} onClick={() => setFilter(k)}>{l}</button>
+            <button key={k} className={`chip ${!statusFilter && filter === k ? 'on' : ''}`} onClick={() => { setFilter(k); setStatusFilter(null); }}>{l}</button>
           ))}
         </div>
       </div>
+      {statusFilter && (
+        <p className="status-filter-note">
+          Mostrando só <StatusBadge status={statusFilter} /> <button className="link-btn small" onClick={() => setStatusFilter(null)}>Mostrar todos</button>
+        </p>
+      )}
       {clients === null && <p className="muted">Carregando…</p>}
       {clients && shown.length === 0 && <p className="muted">Nenhum cliente aqui ainda.</p>}
 
       <div className="client-list">
         {shown.map((c) => (
-          <Link key={c.id} to={`/admin/clients/${c.id}`} className="client-row">
+          <Link key={c.id} to={`/admin/clients/${c.id}`} className={`client-row st-${c.status}`}>
             <div className="client-row-main">
               <h3>{c.name}</h3>
               <p className="muted small">{c.username} · {c.email}{c.phone && ` · ${c.phone}`}</p>
             </div>
             <WhatsAppButton client={c} compact />
-            <span className={`stage ${STAGES[c.stage].cls}`}>{STAGES[c.stage].label}</span>
+            <span className="client-row-status">
+              <StatusBadge status={c.status} />
+              {alert(c) && <span className={`row-alert ${alert(c)[0]}`}>{alert(c)[1]}</span>}
+            </span>
             <div className="client-row-num"><b>{c.selected}</b>/{c.selectionLimit}<span>escolhidas</span></div>
             <div className="client-row-num"><b>{c.proofCount}</b><span>para escolher</span></div>
             <div className="client-row-num"><b>{c.doneCount}</b><span>editadas</span></div>
@@ -112,6 +138,8 @@ export default function ClientsAdmin() {
             </div>
           </Link>
         ))}
+      </div>
+      </div>
       </div>
     </section>
   );

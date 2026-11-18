@@ -14,6 +14,7 @@ import {
   contractStage, lookupHash, fmtSigned,
 } from '../signatures.js';
 import fs from 'node:fs';
+import { clientStatus, setManualMark, STATUSES, MANUAL_KEYS } from '../clientStatus.js';
 
 const router = Router();
 router.use(requireAdmin);
@@ -24,6 +25,11 @@ const USERNAME_RE = /^[a-z0-9._-]{3,40}$/i;
 
 const photographerName = () => getSettings().name || 'Fotógrafa';
 const pdfOpts = () => ({ photographerName: photographerName(), siteUrl: siteUrl() });
+
+function statusFields(c) {
+  const st = clientStatus(c);
+  return { status: st.status, statusIndex: st.index, statusAutoIndex: st.autoIndex, statusSteps: st.steps };
+}
 
 function summary(c) {
   const n = countPhotos(c.id);
@@ -73,6 +79,7 @@ function summary(c) {
     doneNotifiedAt: c.done_notified_at,
     createdAt: c.created_at,
     stage: stage(c),
+    ...statusFields(c),
     proofCount: n.proofs || 0,
     doneCount: n.done || 0,
     selected: n.selected || 0,
@@ -439,6 +446,20 @@ router.post('/:id/contract/sign', async (req, res, next) => {
     try { emailed = (await sendContractCompleteEmail(updated)).sent; } catch (err) { emailError = err.message; }
     res.json({ client: summary(updated), emailed, emailError });
   } catch (e) { next(e); }
+});
+
+// Etapas manuais do status (discutindo contrato, backup, pré-seleção, em edição).
+router.post('/:id/status', (req, res) => {
+  const c = getClient(req.params.id);
+  if (!c) return res.status(404).json({ error: 'Cliente não encontrado' });
+  const key = String(req.body?.key || '');
+  if (!MANUAL_KEYS.includes(key)) return res.status(400).json({ error: 'Esta etapa é marcada automaticamente pelo sistema.' });
+  const on = req.body?.on !== false;
+  const st = clientStatus(c);
+  const i = STATUSES.findIndex((x) => x.key === key);
+  if (on && i <= st.autoIndex) return res.status(409).json({ error: 'O cliente já passou desta etapa.' });
+  setManualMark(c, key, on);
+  res.json(summary(getClient(c.id)));
 });
 
 // PDF com o rodapé do código e a página de assinaturas (como o cliente vê).
